@@ -1,6 +1,6 @@
 package GUI;
 
-import BackendCode.Credentials;
+import BackendCode.service.UserService;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -112,7 +112,7 @@ public class Login {
                 }
                 case "Login": {
                     char[] password = Password_Field.getPassword();
-                    boolean accepted = Credentials.areValid(UN_TextField.getText(), password);
+                    boolean accepted = UserService.signIn(UN_TextField.getText(), password) != null;
 //                    the char[] is wiped rather than left sitting in memory, which is
 //                    the whole reason JPasswordField hands one back instead of a String
                     Arrays.fill(password, '\0');

@@ -192,8 +192,8 @@ public final class SerImporter {
     }
 
     private static void insertBookings(Connection connection, ArrayList<Booking> bookings) throws SQLException {
-        String sql = "INSERT INTO booking (id, customer_id, car_id, rent_time, return_time) "
-                + "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO booking (id, customer_id, car_id, rent_time, return_time, amount_charged) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (Booking booking : bookings) {
                 if (booking.getCustomer() == null || booking.getCar() == null) {
@@ -206,8 +206,14 @@ public final class SerImporter {
                 statement.setLong(4, booking.getRentTime());
                 if (booking.getReturnTime() == 0) {
                     statement.setNull(5, Types.INTEGER);
+                    statement.setNull(6, Types.INTEGER);
                 } else {
                     statement.setLong(5, booking.getReturnTime());
+//                    The legacy format never stored what was charged, so it has to be
+//                    reconstructed from the rate saved alongside the booking. This
+//                    runs after the migration that backfills existing rows, so
+//                    imported rentals would otherwise report no revenue at all.
+                    statement.setInt(6, booking.calculateBill());
                 }
                 statement.addBatch();
             }

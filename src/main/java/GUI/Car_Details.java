@@ -1,5 +1,6 @@
 package GUI;
 
+import BackendCode.service.UserService;
 import BackendCode.Booking;
 import BackendCode.Car;
 import BackendCode.CarOwner;
@@ -27,11 +28,13 @@ public final class Car_Details {
     // still-visible panel's listeners driving the newer screen's fields.
     private DefaultTableModel tablemodel;
 
-    private JButton SearchName_Button, SearchRegNo_Button, Add_Button,
+    private JButton Add_Button,
             Update_Button, Remove_Button, BackButton, LogoutButton;
-    private JTextField SearchName_TextField, SearchRegNo_TextField;
     private JScrollPane jScrollPane1;
     private JTable jTable1;
+    private JTextField Filter_TextField;
+    private JLabel Filter_Label;
+    private JButton ExportCsv_Button;
     private JPanel MainPanel;
 
     /**
@@ -51,11 +54,7 @@ public final class Car_Details {
         MainPanel.setLayout(new AbsoluteLayout());
         MainPanel.setMinimumSize(new Dimension(1366, 730));
 
-        SearchRegNo_Button = new JButton("Search Reg_No");
-        SearchRegNo_TextField = new JTextField();
 
-        SearchName_Button = new JButton("Search Name");
-        SearchName_TextField = new JTextField();
 
         Add_Button = new JButton("Add");
         Update_Button = new JButton("Update");
@@ -67,6 +66,11 @@ public final class Car_Details {
         jScrollPane1 = new JScrollPane();
         jTable1 = new JTable();
 //ID,  Maker,  Name,  Colour,  Type,  SeatingCapacity,  Model,  Condition,  RegNo, RentPerHour,  IsRented RentDate, carOwner customer
+
+        Filter_Label = new JLabel("Filter");
+        Filter_TextField = new JTextField();
+        Filter_TextField.setToolTipText("Narrows the table as you type. Click a column header to sort.");
+        ExportCsv_Button = new JButton("Export CSV");
 
         String[] columns = {"Sr#", "ID", "Maker", "Name", "Colour", "Type", "Seats", "Model", "Condition",
             "Reg No.", "Rent/hour", "Car Owner"};
@@ -85,6 +89,7 @@ public final class Car_Details {
         jScrollPane1 = new JScrollPane();
         jScrollPane1.setViewportView(jTable1);
         jTable1.setFillsViewportHeight(true);// makes the size of table equal to that of scroll pane to fill the table in the scrollpane
+        TableTools.attach(jTable1, Filter_TextField);
         ArrayList<Car> Car_objects = Car.View();
         for (int i = 0; i < Car_objects.size(); i++) {
 //ID,  Maker,  Name,  Colour,  Type,  SeatingCapacity,  Model,  Condition,  RegNo, 
@@ -140,10 +145,9 @@ public final class Car_Details {
 
         jTable1.getTableHeader().setReorderingAllowed(false);
 
-        MainPanel.add(SearchRegNo_Button, new AbsoluteConstraints(10, 15, 130, 22));
-        MainPanel.add(SearchRegNo_TextField, new AbsoluteConstraints(145, 15, 240, 22));
-        MainPanel.add(SearchName_Button, new AbsoluteConstraints(390, 15, 130, 22));
-        MainPanel.add(SearchName_TextField, new AbsoluteConstraints(525, 15, 240, 22));
+        MainPanel.add(Filter_Label, new AbsoluteConstraints(10, 15, 45, 22));
+        MainPanel.add(Filter_TextField, new AbsoluteConstraints(60, 15, 320, 22));
+        MainPanel.add(ExportCsv_Button, new AbsoluteConstraints(395, 15, 130, 22));
         MainPanel.add(jScrollPane1, new AbsoluteConstraints(10, 60, 1330, 550));
         MainPanel.add(Remove_Button, new AbsoluteConstraints(785, 625, 130, 22));
         MainPanel.add(Add_Button, new AbsoluteConstraints(450, 625, 130, 22));
@@ -151,11 +155,10 @@ public final class Car_Details {
         MainPanel.add(BackButton, new AbsoluteConstraints(1106, 625, 100, 22));
         MainPanel.add(LogoutButton, new AbsoluteConstraints(1236, 625, 100, 22));
         
-        SearchName_Button.addActionListener(new Car_Details_ActionListener());
-        SearchRegNo_Button.addActionListener(new Car_Details_ActionListener());
         Add_Button.addActionListener(new Car_Details_ActionListener());
         Update_Button.addActionListener(new Car_Details_ActionListener());
         Remove_Button.addActionListener(new Car_Details_ActionListener());
+        ExportCsv_Button.addActionListener(new Car_Details_ActionListener());
         BackButton.addActionListener(new Car_Details_ActionListener());
         LogoutButton.addActionListener(new Car_Details_ActionListener());
         
@@ -168,50 +171,6 @@ public final class Car_Details {
 
             switch (e.getActionCommand()) {
 
-                case "Search Reg_No": {
-                    String regNo = SearchRegNo_TextField.getText().trim();
-                    if (!regNo.isEmpty()) {
-                        if (Car.isRegNoValid(regNo)) {
-                            Car car = Car.SearchByRegNo(regNo);
-                            if (car != null) {
-                                JOptionPane.showMessageDialog(null, car.toString());
-                                SearchRegNo_TextField.setText("");
-                            } else {
-                                JOptionPane.showMessageDialog(null, "Required Car not found");
-                                SearchRegNo_TextField.setText("");
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Invalid Reg No.");
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Please Enter Car Reg no first !");
-                    }
-                }
-                break;
-                case "Search Name": {
-                    String name = SearchName_TextField.getText().trim();
-                    if (!name.isEmpty()) {
-                        if (Car.isNameValid(name)) {
-
-                            ArrayList<Car> car = Car.SearchByName(name);
-
-                            if (!car.isEmpty()) {
-                                JOptionPane.showMessageDialog(null, car.toString());
-                                SearchName_TextField.setText("");
-                            } else {
-                                JOptionPane.showMessageDialog(null, "Required Car not found");
-                                SearchName_TextField.setText("");
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Invalid Name !");
-                            SearchName_TextField.setText("");
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Please Enter Car Name first !");
-                    }
-
-                }
-                break;
                 case "Add": {
                     Parent_JFrame.getMainFrame().setEnabled(false);
                     Car_Add ac = new Car_Add();
@@ -230,6 +189,10 @@ public final class Car_Details {
                     ac.setVisible(true);
                 }
                 break;
+                case "Export CSV": {
+                    TableTools.exportCsv(Parent_JFrame.getMainFrame(), jTable1, "cars.csv");
+                }
+                break;
                 case "Back": {
                     Parent_JFrame.getMainFrame().setTitle("Rent-A-Car Management System [REBORN]");
                     MainMenu mm = new MainMenu();
@@ -240,7 +203,8 @@ public final class Car_Details {
                 }
                 break;
                 case "Logout": {
-                    Parent_JFrame.getMainFrame().dispose();
+                    UserService.signOut();
+                Parent_JFrame.getMainFrame().dispose();
                     Runner.showLogin();
                 }
                 break;

@@ -1,5 +1,6 @@
 package GUI;
 
+import BackendCode.service.UserService;
 import BackendCode.Booking;
 import BackendCode.Customer;
 import javax.swing.*;
@@ -18,6 +19,9 @@ public final class Customer_Details implements ActionListener {
     private JButton SearchID_Button, SearchName_Button, Update_Button, Add_Button, Remove_Button, Back_Button, Logout_Button, ClearBill_Button;
     private JScrollPane jScrollPane1;
     private JTable jTable1;
+    private JTextField Filter_TextField;
+    private JLabel Filter_Label;
+    private JButton ExportCsv_Button;
     private JTextField SearchName_TextField;
     private DefaultTableModel tablemodel;
     private JPanel MainPanel;
@@ -28,18 +32,19 @@ public final class Customer_Details implements ActionListener {
         MainPanel.setLayout(new AbsoluteLayout());
         MainPanel.setMinimumSize(new Dimension(1366, 730));
 
-        SearchID_Button = new JButton("Search ID");
         Update_Button = new JButton("Update");
         Add_Button = new JButton("Add");
         Remove_Button = new JButton("Remove");
         Back_Button = new JButton("Back");
         Logout_Button = new JButton("Logout");
-        SearchName_Button = new JButton("Search Name");
         ClearBill_Button = new JButton("Clear Bill");
-        SearchID_TextField = new JTextField();
-        SearchName_TextField = new JTextField();
         jScrollPane1 = new JScrollPane();
         jTable1 = new JTable();
+
+        Filter_Label = new JLabel("Filter");
+        Filter_TextField = new JTextField();
+        Filter_TextField.setToolTipText("Narrows the table as you type. Click a column header to sort.");
+        ExportCsv_Button = new JButton("Export CSV");
 
         String[] columns = {"Sr#", "ID", "CNIC", "Name", "Contact Number", "Car Rented", "Bill"};
         tablemodel = new DefaultTableModel(columns, 0) {
@@ -57,6 +62,7 @@ public final class Customer_Details implements ActionListener {
         jScrollPane1 = new JScrollPane();
         jScrollPane1.setViewportView(jTable1);
         jTable1.setFillsViewportHeight(true);// makes the size of table equal to that of scroll pane to fill the table in the scrollpane
+        TableTools.attach(jTable1, Filter_TextField);
         ArrayList<Customer> Customer_objects = Customer.View();
         for (int i = 0; i < Customer_objects.size(); i++) {
 
@@ -110,10 +116,9 @@ public final class Customer_Details implements ActionListener {
 //        jTable1.getColumnModel().getColumn(9).setPreferredWidth(110);
 
 //        jScrollPane1.setViewportView(jTable1);
-        MainPanel.add(SearchID_Button, new AbsoluteConstraints(390, 10, 130, 22));
-        MainPanel.add(SearchID_TextField, new AbsoluteConstraints(525, 10, 240, 22));
-        MainPanel.add(SearchName_Button, new AbsoluteConstraints(10, 10, 130, 22));
-        MainPanel.add(SearchName_TextField, new AbsoluteConstraints(145, 10, 240, 22));
+        MainPanel.add(Filter_Label, new AbsoluteConstraints(10, 10, 45, 22));
+        MainPanel.add(Filter_TextField, new AbsoluteConstraints(60, 10, 320, 22));
+        MainPanel.add(ExportCsv_Button, new AbsoluteConstraints(395, 10, 130, 22));
         MainPanel.add(jScrollPane1, new AbsoluteConstraints(10, 50, 1330, 550));
         MainPanel.add(Update_Button, new AbsoluteConstraints(579, 625, 130, 22));
         MainPanel.add(Add_Button, new AbsoluteConstraints(420, 625, 130, 22));
@@ -122,11 +127,10 @@ public final class Customer_Details implements ActionListener {
         MainPanel.add(Logout_Button, new AbsoluteConstraints(1236, 625, 100, 22));
         MainPanel.add(ClearBill_Button, new AbsoluteConstraints(10, 625, 200, 22));
 
-        SearchID_Button.addActionListener(this);
-        SearchName_Button.addActionListener(this);
         Remove_Button.addActionListener(this);
         Add_Button.addActionListener(this);
         Update_Button.addActionListener(this);
+        ExportCsv_Button.addActionListener(this);
         Back_Button.addActionListener(this);
         Logout_Button.addActionListener(this);
         ClearBill_Button.addActionListener(this);
@@ -143,50 +147,6 @@ public final class Customer_Details implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         switch (e.getActionCommand()) {
-            case "Search ID": {
-                String id = SearchID_TextField.getText().trim();
-                if (!id.isEmpty()) {
-                    if (Customer.isIDvalid(id)) {
-                        Customer co = Customer.SearchByID(Integer.parseInt(id));
-                        if (co != null) {
-                            JOptionPane.showMessageDialog(null, co.toString());
-                            SearchID_TextField.setText("");
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Required person not found");
-                            SearchID_TextField.setText("");
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Invalid ID !");
-                    }
-                } else {
-                    JOptionPane.showMessageDialog(null, "Please Enter ID first !");
-                }
-            }
-            break;
-            case "Search Name": {
-                String name = SearchName_TextField.getText().trim();
-                if (!name.isEmpty()) {
-                    if (Customer.isNameValid(name)) {
-                        ArrayList<Customer> customerArrayList = Customer.SearchByName(name);
-                        String record = "";
-                        for (int i = 0; i < customerArrayList.size(); i++) {
-                            record += customerArrayList.get(i).toString() + "\n";
-                        }
-                        if (!customerArrayList.isEmpty()) {
-                            JOptionPane.showMessageDialog(null, record);
-                            SearchName_TextField.setText("");
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Required person not found");
-                            SearchName_TextField.setText("");
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Invalid Name !");
-                    }
-                } else {
-                    JOptionPane.showMessageDialog(null, "Please Enter Name first !");
-                }
-            }
-            break;
             case "Add": {
                 Parent_JFrame.getMainFrame().setEnabled(false);
                 Customer_Add aco = new Customer_Add();
@@ -194,6 +154,12 @@ public final class Customer_Details implements ActionListener {
             }
             break;
             case "Remove": {
+                if (!UserService.currentCanManageAccounts()) {
+                    JOptionPane.showMessageDialog(null,
+                            "Only an administrator can remove a customer.",
+                            "Not permitted", JOptionPane.WARNING_MESSAGE);
+                    break;
+                }
                 Parent_JFrame.getMainFrame().setEnabled(false);
                 new Customer_Remove().frame.setVisible(true);
             }
@@ -201,6 +167,10 @@ public final class Customer_Details implements ActionListener {
             case "Update": {
                 Parent_JFrame.getMainFrame().setEnabled(false);
                 new Customer_Update().frame.setVisible(true);
+            }
+            break;
+            case "Export CSV": {
+                TableTools.exportCsv(Parent_JFrame.getMainFrame(), jTable1, "customers.csv");
             }
             break;
             case "Back": {
@@ -213,11 +183,18 @@ public final class Customer_Details implements ActionListener {
             }
             break;
             case "Logout": {
+                UserService.signOut();
                 Parent_JFrame.getMainFrame().dispose();
                 Runner.showLogin();
             }
             break;
             case "Clear Bill": {
+                if (!UserService.currentCanManageAccounts()) {
+                    JOptionPane.showMessageDialog(null,
+                            "Only an administrator can clear a customer's bill.",
+                            "Not permitted", JOptionPane.WARNING_MESSAGE);
+                    break;
+                }
                 ArrayList<Customer> View = Customer.View();//Creating an arrayList that contains Objects of all Customers
                 if (!View.isEmpty()) {
                     ArrayList<String> IDsArray = new ArrayList<>(0);

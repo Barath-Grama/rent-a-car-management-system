@@ -73,8 +73,52 @@ public final class Database {
             statement.execute("PRAGMA foreign_keys = ON");
         }
         applySchema(connection);
+        migrate(connection);
         SerImporter.importIfPresent(connection);
         return connection;
+    }
+
+    /**
+     * Brings a database created by an earlier version up to date.
+     * <p>
+     * The schema script only uses {@code CREATE TABLE IF NOT EXISTS}, so a table that
+     * already exists is left exactly as it was. Anything added to a table after the
+     * fact has to be applied here as well, or it only ever appears on machines that
+     * started from scratch.
+     */
+    private static void migrate(Connection target) throws SQLException {
+        if (hasColumn(target, "booking", "amount_charged")) {
+            return;
+        }
+        LOG.info("migrating: adding booking.amount_charged");
+        try (Statement statement = target.createStatement()) {
+            statement.execute("ALTER TABLE booking ADD COLUMN amount_charged INTEGER");
+//            Existing finished rentals never recorded what they charged, so the only
+//            figure available is a reconstruction from the car's current rate. That is
+//            the very thing the column exists to avoid, but it beats reporting nothing
+//            for past rentals, and it is a one-off: every return from now on records
+//            the real amount.
+            int filled = statement.executeUpdate(
+                    "UPDATE booking SET amount_charged = ("
+                    + "  SELECT c.rent_per_hour * MAX(1, (booking.return_time - booking.rent_time + 3599999) / 3600000)"
+                    + "  FROM car c WHERE c.id = booking.car_id)"
+                    + " WHERE return_time IS NOT NULL");
+            if (filled > 0) {
+                LOG.info("backfilled {} finished bookings from the current rate (approximate)", filled);
+            }
+        }
+    }
+
+    private static boolean hasColumn(Connection target, String table, String column) throws SQLException {
+        try (Statement statement = target.createStatement();
+             java.sql.ResultSet rows = statement.executeQuery("PRAGMA table_info(" + table + ")")) {
+            while (rows.next()) {
+                if (column.equalsIgnoreCase(rows.getString("name"))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static void applySchema(Connection target) throws SQLException {

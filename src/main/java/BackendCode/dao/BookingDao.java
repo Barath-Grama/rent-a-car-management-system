@@ -33,7 +33,7 @@ public final class BookingDao {
     private static final Logger LOG = LoggerFactory.getLogger(BookingDao.class);
 
     private static final String SELECT =
-            "SELECT b.id, b.rent_time, b.return_time, b.customer_id, b.car_id FROM booking b ";
+            "SELECT b.id, b.rent_time, b.return_time, b.amount_charged, b.customer_id, b.car_id FROM booking b ";
 
     private BookingDao() {
     }
@@ -45,7 +45,9 @@ public final class BookingDao {
         }
         Customer customer = CustomerDao.findById(rows.getInt("customer_id"));
         Car car = CarDao.findById(rows.getInt("car_id"));
-        return new Booking(rows.getInt("id"), customer, car, rows.getLong("rent_time"), returnTime);
+        Booking booking = new Booking(rows.getInt("id"), customer, car, rows.getLong("rent_time"), returnTime);
+        booking.setAmountCharged(rows.getInt("amount_charged"));
+        return booking;
     }
 
     private static ArrayList<Booking> query(String sql, Object... parameters) {
@@ -108,7 +110,7 @@ public final class BookingDao {
     }
 
     public static boolean insert(Booking booking) {
-        String sql = "INSERT INTO booking (customer_id, car_id, rent_time, return_time) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO booking (customer_id, car_id, rent_time, return_time, amount_charged) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement statement = Database.connection()
                 .prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             bindFields(statement, booking);
@@ -128,10 +130,10 @@ public final class BookingDao {
     }
 
     public static boolean update(Booking booking) {
-        String sql = "UPDATE booking SET customer_id = ?, car_id = ?, rent_time = ?, return_time = ? WHERE id = ?";
+        String sql = "UPDATE booking SET customer_id = ?, car_id = ?, rent_time = ?, return_time = ?, amount_charged = ? WHERE id = ?";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
             bindFields(statement, booking);
-            statement.setInt(5, booking.getID());
+            statement.setInt(6, booking.getID());
             return statement.executeUpdate() == 1;
         } catch (SQLException ex) {
             LOG.error("could not update a booking", ex);
@@ -147,6 +149,12 @@ public final class BookingDao {
             statement.setNull(4, Types.INTEGER);
         } else {
             statement.setLong(4, booking.getReturnTime());
+        }
+        if (booking.getAmountCharged() == 0) {
+//            nothing charged until the car is back
+            statement.setNull(5, Types.INTEGER);
+        } else {
+            statement.setInt(5, booking.getAmountCharged());
         }
     }
 

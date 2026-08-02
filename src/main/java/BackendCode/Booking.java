@@ -21,6 +21,19 @@ public class Booking implements Serializable {
     private Car car;
     private long RentTime, ReturnTime; // stores System time when the Book() method is called
 
+    /**
+     * What was actually charged when the car came back, 0 while it is still out.
+     * <p>
+     * Recorded rather than recomputed: rent_per_hour is editable, so working the
+     * figure out from the car's current rate would rewrite past takings every time
+     * somebody adjusted a price.
+     * <p>
+     * Adding this field does not stop {@link SerImporter} reading the old .ser files.
+     * That is precisely what pinning {@code serialVersionUID} buys: the stream has no
+     * value for it and deserialization leaves it at 0.
+     */
+    private int amountCharged;
+
     public Booking() {
     }
 
@@ -62,6 +75,14 @@ public class Booking implements Serializable {
 
     public void setRentTime(long RentTime) {
         this.RentTime = RentTime;
+    }
+
+    public int getAmountCharged() {
+        return amountCharged;
+    }
+
+    public void setAmountCharged(int amountCharged) {
+        this.amountCharged = amountCharged;
     }
 
     public long getReturnTime() {

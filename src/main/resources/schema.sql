@@ -49,7 +49,21 @@ CREATE TABLE IF NOT EXISTS booking (
     -- NULL while the car is still out. The old format used 0 as that sentinel, which
     -- is also a valid epoch millisecond and made "not returned" indistinguishable
     -- from "returned in 1970" in any query.
-    return_time  INTEGER
+    return_time  INTEGER,
+    -- What the customer was actually charged, recorded at the moment of return.
+    -- Revenue reports must not recompute this from the car's rent_per_hour: that
+    -- rate is editable, so raising a price would silently rewrite the takings of
+    -- every rental that car ever had. NULL until the car comes back.
+    amount_charged INTEGER
+);
+
+-- Who may sign in. The password is a BCrypt hash, never the password itself, and the
+-- role decides whether the destructive actions are offered at all.
+CREATE TABLE IF NOT EXISTS app_user (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    username       TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    password_hash  TEXT NOT NULL,
+    role           TEXT NOT NULL CHECK (role IN ('ADMIN', 'STAFF'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_car_owner_id      ON car(owner_id);

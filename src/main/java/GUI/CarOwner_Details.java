@@ -1,5 +1,6 @@
 package GUI;
 
+import BackendCode.service.UserService;
 import BackendCode.Car;
 import BackendCode.CarOwner;
 import javax.swing.*;
@@ -18,6 +19,9 @@ public final class CarOwner_Details implements ActionListener {
     private JButton SearchID_Button, SearchName_Button, Update_Button, Add_Button, Remove_Button, Back_Button, Logout_Button, ClearBalance_Button;
     private JScrollPane jScrollPane1;
     private JTable jTable1;
+    private JTextField Filter_TextField;
+    private JLabel Filter_Label;
+    private JButton ExportCsv_Button;
     private JTextField SearchName_TextField;
     private DefaultTableModel tablemodel;
     private JPanel MainPanel;
@@ -28,18 +32,19 @@ public final class CarOwner_Details implements ActionListener {
         MainPanel.setLayout(new AbsoluteLayout());
         MainPanel.setMinimumSize(new Dimension(1366, 730));
 
-        SearchID_Button = new JButton("Search ID");
         Update_Button = new JButton("Update");
         Add_Button = new JButton("Add");
         Remove_Button = new JButton("Remove");
         Back_Button = new JButton("Back");
         Logout_Button = new JButton("Logout");
-        SearchName_Button = new JButton("Search Name");
         ClearBalance_Button = new JButton("Clear Balance");
-        SearchID_TextField = new JTextField();
-        SearchName_TextField = new JTextField();
         jScrollPane1 = new JScrollPane();
         jTable1 = new JTable();
+
+        Filter_Label = new JLabel("Filter");
+        Filter_TextField = new JTextField();
+        Filter_TextField.setToolTipText("Narrows the table as you type. Click a column header to sort.");
+        ExportCsv_Button = new JButton("Export CSV");
 
         String[] columns = {"Sr#", "ID", "CNIC", "Name", "Contact Number", "Car Given for rent", "Balance"};
         tablemodel = new DefaultTableModel(columns, 0) {
@@ -56,6 +61,7 @@ public final class CarOwner_Details implements ActionListener {
         jTable1.setSize(new Dimension(1330, 550));
         jScrollPane1 = new JScrollPane(jTable1);
         jTable1.setFillsViewportHeight(true);// makes the size of table equal to that of scroll pane to fill the table in the scrollpane
+        TableTools.attach(jTable1, Filter_TextField);
         ArrayList<CarOwner> CarOwner_objects = CarOwner.View();
         for (int i = 0; i < CarOwner_objects.size(); i++) {
 
@@ -102,10 +108,9 @@ public final class CarOwner_Details implements ActionListener {
         jTable1.getColumnModel().getColumn(5).setPreferredWidth(140);
         jTable1.getColumnModel().getColumn(6).setPreferredWidth(100);
 //        jScrollPane1.setViewportView(jTable1);
-        MainPanel.add(SearchID_Button, new AbsoluteConstraints(390, 10, 130, 22));
-        MainPanel.add(SearchID_TextField, new AbsoluteConstraints(525, 10, 240, 22));
-        MainPanel.add(SearchName_Button, new AbsoluteConstraints(10, 10, 130, 22));
-        MainPanel.add(SearchName_TextField, new AbsoluteConstraints(145, 10, 240, 22));
+        MainPanel.add(Filter_Label, new AbsoluteConstraints(10, 10, 45, 22));
+        MainPanel.add(Filter_TextField, new AbsoluteConstraints(60, 10, 320, 22));
+        MainPanel.add(ExportCsv_Button, new AbsoluteConstraints(395, 10, 130, 22));
         MainPanel.add(jScrollPane1, new AbsoluteConstraints(10, 50, 1330, 550));
         MainPanel.add(Update_Button, new AbsoluteConstraints(579, 625, 130, 22));
         MainPanel.add(Add_Button, new AbsoluteConstraints(420, 625, 130, 22));
@@ -114,11 +119,10 @@ public final class CarOwner_Details implements ActionListener {
         MainPanel.add(Logout_Button, new AbsoluteConstraints(1236, 625, 100, 22));
         MainPanel.add(ClearBalance_Button, new AbsoluteConstraints(10, 625, 200, 22));
 
-        SearchID_Button.addActionListener(this);
-        SearchName_Button.addActionListener(this);
         Remove_Button.addActionListener(this);
         Add_Button.addActionListener(this);
         Update_Button.addActionListener(this);
+        ExportCsv_Button.addActionListener(this);
         Back_Button.addActionListener(this);
         Logout_Button.addActionListener(this);
         ClearBalance_Button.addActionListener(this);
@@ -135,51 +139,6 @@ public final class CarOwner_Details implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         switch (e.getActionCommand()) {
-            case "Search ID": {
-                String id = SearchID_TextField.getText().trim();
-                if (!id.isEmpty()) {
-                    if (CarOwner.isIDvalid(id)) {
-                        CarOwner co = CarOwner.SearchByID(Integer.parseInt(id));
-                        if (co != null) {
-                            JOptionPane.showMessageDialog(null, co.toString());
-                            SearchID_TextField.setText("");
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Required person not found");
-                            SearchID_TextField.setText("");
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Invalid ID !");
-                    }
-                } else {
-                    JOptionPane.showMessageDialog(null, "Please Enter ID first !");
-                }
-            }
-            break;
-            case "Search Name": {
-                String name = SearchName_TextField.getText().trim();
-                if (!name.isEmpty()) {
-                    if (CarOwner.isNameValid(name)) {
-                        ArrayList<CarOwner> carOwnerArrayList = CarOwner.SearchByName(name);
-                        String record = "";
-
-                        if (!carOwnerArrayList.isEmpty()) {
-                            for (int i = 0; i < carOwnerArrayList.size(); i++) {
-                                record += carOwnerArrayList.get(i).toString() + "\n";
-                            }
-                            JOptionPane.showMessageDialog(null, record);
-                            SearchName_TextField.setText("");
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Required person not found");
-                            SearchName_TextField.setText("");
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Invalid Name !");
-                    }
-                } else {
-                    JOptionPane.showMessageDialog(null, "Please Enter Name first !");
-                }
-            }
-            break;
             case "Add": {
                 Parent_JFrame.getMainFrame().setEnabled(false);
                 CarOwner_Add aco = new CarOwner_Add();
@@ -187,6 +146,12 @@ public final class CarOwner_Details implements ActionListener {
             }
             break;
             case "Remove": {
+                if (!UserService.currentCanManageAccounts()) {
+                    JOptionPane.showMessageDialog(null,
+                            "Only an administrator can remove a car owner.",
+                            "Not permitted", JOptionPane.WARNING_MESSAGE);
+                    break;
+                }
                 Parent_JFrame.getMainFrame().setEnabled(false);
                 new CarOwner_Remove().frame.setVisible(true);
             }
@@ -199,6 +164,12 @@ public final class CarOwner_Details implements ActionListener {
             break;
 
             case "Clear Balance": {
+                if (!UserService.currentCanManageAccounts()) {
+                    JOptionPane.showMessageDialog(null,
+                            "Only an administrator can clear a car owner's balance.",
+                            "Not permitted", JOptionPane.WARNING_MESSAGE);
+                    break;
+                }
 //                Creating an array that contains IDs of all CarOwners
                 ArrayList<CarOwner> View = CarOwner.View(); // getting all the available Car Owner Objects
                 if (!View.isEmpty()) {
@@ -240,6 +211,10 @@ public final class CarOwner_Details implements ActionListener {
                 }
             }
             break;
+            case "Export CSV": {
+                TableTools.exportCsv(Parent_JFrame.getMainFrame(), jTable1, "car-owners.csv");
+            }
+            break;
             case "Back": {
 
                 Parent_JFrame.getMainFrame().setTitle("Rent-A-Car Management System [REBORN]");
@@ -251,6 +226,7 @@ public final class CarOwner_Details implements ActionListener {
             }
             break;
             case "Logout": {
+                UserService.signOut();
                 Parent_JFrame.getMainFrame().dispose();
                 Runner.showLogin();
             }

@@ -1,5 +1,6 @@
 package GUI;
 
+import BackendCode.service.UserService;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -20,7 +21,7 @@ public final class MainMenu implements ActionListener {
 
     // per-window state; static meant a second menu replaced the first one's widgets
     private JLabel Image_Label;
-    private JButton CarsButton, CustomerButton, OwnerButton, BookingButton, LogoutButton;
+    private JButton CarsButton, CustomerButton, OwnerButton, BookingButton, LogoutButton, DashboardButton;
     private JPanel MainPanel;
 
     public JPanel getMainPanel() {
@@ -38,10 +39,12 @@ public final class MainMenu implements ActionListener {
         OwnerButton = new JButton("Owner");
         BookingButton = new JButton("Booking Details");
         LogoutButton = new JButton("Logout");
+        DashboardButton = new JButton("Dashboard");
 
         Image_Label = new JLabel();
 
         LogoutButton.setFont(new Font("Tahoma", 1, 14));
+        DashboardButton.setFont(new Font("Tahoma", 1, 14));
         CustomerButton.setFont(new Font("Tahoma", 1, 14));
         CarsButton.setFont(new Font("Tahoma", 1, 14));
         OwnerButton.setFont(new Font("Tahoma", 1, 14));
@@ -53,6 +56,7 @@ public final class MainMenu implements ActionListener {
         CarsButton.setBackground(new Color(240,240,240));
         OwnerButton.setBackground(new Color(240,240,240));
         LogoutButton.setBackground(new Color(240,240,240));
+        DashboardButton.setBackground(new Color(240,240,240));
         BookingButton.setBackground(new Color(240,240,240));
 
         MainPanel.add(LogoutButton, new AbsoluteConstraints(1166, 80, 100, 25));
@@ -60,6 +64,7 @@ public final class MainMenu implements ActionListener {
         MainPanel.add(CarsButton, new AbsoluteConstraints(70, 500, 200, 99));
         MainPanel.add(OwnerButton, new AbsoluteConstraints(70, 360, 200, 99));
         MainPanel.add(BookingButton, new AbsoluteConstraints(70, 80, 200, 99));
+        MainPanel.add(DashboardButton, new AbsoluteConstraints(300, 80, 200, 99));
         MainPanel.add(Image_Label, new AbsoluteConstraints(0, 0, 1370, 710));
 
         BookingButton.addActionListener(this);
@@ -67,6 +72,7 @@ public final class MainMenu implements ActionListener {
         OwnerButton.addActionListener(this);
         LogoutButton.addActionListener(this);
         CarsButton.addActionListener(this);
+        DashboardButton.addActionListener(this);
 //        Parent_JFrame.getMainFrame().add(MainPanel);
     }
 
@@ -98,7 +104,16 @@ public final class MainMenu implements ActionListener {
                 Parent_JFrame.getMainFrame().getContentPane().repaint();
             }
             break;
+            case "Dashboard": {
+                Parent_JFrame.getMainFrame().getContentPane().removeAll();
+                Dashboard dash = new Dashboard();
+                Parent_JFrame.getMainFrame().add(dash.getMainPanel());
+                Parent_JFrame.getMainFrame().getContentPane().revalidate();
+                Parent_JFrame.getMainFrame().getContentPane().repaint();
+            }
+            break;
             case "Logout": {
+                UserService.signOut();
                 Parent_JFrame.getMainFrame().dispose();
                 Runner.showLogin();
             }

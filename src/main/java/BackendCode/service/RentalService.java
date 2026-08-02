@@ -80,6 +80,9 @@ public final class RentalService {
 
         open.setReturnTime(System.currentTimeMillis());
         int bill = open.calculateBill();
+//        record what was charged rather than leaving it to be recomputed later from a
+//        rate that may since have changed
+        open.setAmountCharged(bill);
 
         boolean committed = Database.inTransaction(() -> {
             if (!BookingDao.update(open)) {

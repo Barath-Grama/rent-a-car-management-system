@@ -1,5 +1,6 @@
 package GUI;
 
+import BackendCode.service.UserService;
 import BackendCode.Booking;
 import BackendCode.Car;
 import BackendCode.Customer;
@@ -29,11 +30,12 @@ public final class Booking_Details {
     // still-visible panel's listeners driving the newer screen's fields.
     private DefaultTableModel tablemodel;
 
-    private JButton SearchCustomerID_Button, SearchCarRegNo_Button,
-            BackButton, LogoutButton, BookCar_Button, UnbookCar_Button;
-    private JTextField CustomerID_TextField, CarRegNo_TextField;
+    private JButton BackButton, LogoutButton, BookCar_Button, UnbookCar_Button;
     private JScrollPane jScrollPane1;
     private JTable jTable1;
+    private JTextField Filter_TextField;
+    private JLabel Filter_Label;
+    private JButton ExportCsv_Button;
     private JPanel MainPanel;
 
     public Booking_Details() {
@@ -42,19 +44,19 @@ public final class Booking_Details {
         MainPanel.setLayout(new AbsoluteLayout());
         MainPanel.setMinimumSize(new Dimension(1366, 730));
 
-        SearchCustomerID_Button = new JButton("Search by Customer ID");
-        SearchCarRegNo_Button = new JButton("Search by Car RegNo");
         BackButton = new JButton("Back");
         LogoutButton = new JButton("Logout");
         BookCar_Button = new JButton("Book");
         UnbookCar_Button = new JButton("Unbook");
 
-        CustomerID_TextField = new JTextField();
-        CarRegNo_TextField = new JTextField();
-
         jScrollPane1 = new JScrollPane();
         jTable1 = new JTable();
 //ID,  Maker,  Name,  Colour,  Type,  SeatingCapacity,  Model,  Condition,  RegNo, RentPerHour,  IsRented RentDate, carOwner customer
+
+        Filter_Label = new JLabel("Filter");
+        Filter_TextField = new JTextField();
+        Filter_TextField.setToolTipText("Narrows the table as you type. Click a column header to sort.");
+        ExportCsv_Button = new JButton("Export CSV");
 
         String[] columns = {"Sr#", "ID", "Customer ID+Name", "Car Name", "Rent Time", "Return Time"};
         tablemodel = new DefaultTableModel(columns, 0) {
@@ -71,6 +73,7 @@ public final class Booking_Details {
         jScrollPane1 = new JScrollPane();
         jScrollPane1.setViewportView(jTable1);
         jTable1.setFillsViewportHeight(true);// makes the size of table equal to that of scroll pane to fill the table in the scrollpane
+        TableTools.attach(jTable1, Filter_TextField);
         ArrayList<Booking> Booking_objects = Booking.View();
         for (int i = 0; i < Booking_objects.size(); i++) {
 //ID,  Maker,  Name,  Colour,  Type,  SeatingCapacity,  Model,  Condition,  RegNo, 
@@ -119,19 +122,17 @@ public final class Booking_Details {
 
         jTable1.getTableHeader().setReorderingAllowed(false);
 
+        MainPanel.add(Filter_Label, new AbsoluteConstraints(10, 15, 45, 22));
+        MainPanel.add(Filter_TextField, new AbsoluteConstraints(60, 15, 320, 22));
+        MainPanel.add(ExportCsv_Button, new AbsoluteConstraints(395, 15, 130, 22));
         MainPanel.add(jScrollPane1, new AbsoluteConstraints(10, 60, 1330, 550));
         MainPanel.add(BackButton, new AbsoluteConstraints(1106, 625, 100, 22));
         MainPanel.add(LogoutButton, new AbsoluteConstraints(1236, 625, 100, 22));
         MainPanel.add(BookCar_Button, new AbsoluteConstraints(10, 625, 130, 22));
         MainPanel.add(UnbookCar_Button, new AbsoluteConstraints(160, 625, 130, 22));
 
-        MainPanel.add(SearchCarRegNo_Button, new AbsoluteConstraints(10, 15, 160, 22));
-        MainPanel.add(CarRegNo_TextField, new AbsoluteConstraints(185, 15, 240, 22));
-        MainPanel.add(SearchCustomerID_Button, new AbsoluteConstraints(440, 15, 180, 22));
-        MainPanel.add(CustomerID_TextField, new AbsoluteConstraints(635, 15, 240, 22));
 
-        SearchCustomerID_Button.addActionListener(new Booking_Details_ActionListener());
-        SearchCarRegNo_Button.addActionListener(new Booking_Details_ActionListener());
+        ExportCsv_Button.addActionListener(new Booking_Details_ActionListener());
         BackButton.addActionListener(new Booking_Details_ActionListener());
         LogoutButton.addActionListener(new Booking_Details_ActionListener());
         BookCar_Button.addActionListener(new Booking_Details_ActionListener());
@@ -153,6 +154,10 @@ public final class Booking_Details {
 
             switch (e.getActionCommand()) {
 
+                case "Export CSV": {
+                    TableTools.exportCsv(Parent_JFrame.getMainFrame(), jTable1, "bookings.csv");
+                }
+                break;
                 case "Back": {
                     Parent_JFrame.getMainFrame().setTitle("Rent-A-Car Management System [REBORN]");
                     MainMenu mm = new MainMenu();
@@ -163,7 +168,8 @@ public final class Booking_Details {
                 }
                 break;
                 case "Logout": {
-                    Parent_JFrame.getMainFrame().dispose();
+                    UserService.signOut();
+                Parent_JFrame.getMainFrame().dispose();
                     Runner.showLogin();
                 }
                 break;
@@ -185,54 +191,6 @@ public final class Booking_Details {
                     } else {
                         JOptionPane.showMessageDialog(null, "No Booked Cars found !");
                     }
-                }
-                break;
-                case "Search by Customer ID": {
-                    String customerID = CustomerID_TextField.getText().trim();
-                    if (!customerID.isEmpty()) {
-                        if (Customer.isIDvalid(customerID)) {
-                            Customer customer = Customer.SearchByID(Integer.parseInt(customerID));
-                            if (customer != null) {
-                                ArrayList<Booking> bookings = Booking.SearchByCustomerID(Integer.parseInt(customerID));
-                                if (!bookings.isEmpty()) {
-                                    JOptionPane.showMessageDialog(null, bookings.toString());
-                                } else {
-                                    JOptionPane.showMessageDialog(null, "This Customer has not booked any cars yet !");
-                                }
-                            } else {
-                                JOptionPane.showMessageDialog(null, "Customer ID not found !");
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Invalid Customer ID !");
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Enter Customer ID first !");
-                    }
-                    CustomerID_TextField.setText("");
-                }
-                break;
-                case "Search by Car RegNo": {
-                    String carRegNo = CarRegNo_TextField.getText().trim();
-                    if (!carRegNo.isEmpty()) {
-                        if (Car.isRegNoValid(carRegNo)) {
-                            Car car = Car.SearchByRegNo(carRegNo);
-                            if (car != null) {
-                                ArrayList<Booking> bookings = Booking.SearchByCarRegNo(carRegNo);
-                                if (!bookings.isEmpty()) {
-                                    JOptionPane.showMessageDialog(null, bookings.toString());
-                                } else {
-                                    JOptionPane.showMessageDialog(null, "This Car is not booked yet !");
-                                }
-                            } else {
-                                JOptionPane.showMessageDialog(null, "Registeration no. not found !");
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Invalid Registeration no !");
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Enter Car Registeration No first !");
-                    }
-                    CarRegNo_TextField.setText("");
                 }
                 break;
             }

@@ -80,7 +80,9 @@ public final class Booking_Details {
                     + ": " + Booking_objects.get(i).getCustomer().getName();
             String carName = Booking_objects.get(i).getCar().getName();
             String carID = Booking_objects.get(i).getCar().getID()+"";
-            SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm a dd-MM-yyyy");
+//            hh, not HH: HH is the 24-hour clock, and pairing it with the am/pm
+//            marker rendered half the day as nonsense like "21:22 pm"
+            SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm a dd-MM-yyyy");
             Date rentime = new Date(Booking_objects.get(i).getRentTime());
             String rentTime = dateFormat.format(rentime);
 

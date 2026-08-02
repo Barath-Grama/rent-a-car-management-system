@@ -6,7 +6,6 @@ import BackendCode.service.RentalService;
 import BackendCode.service.ServiceResult;
 import java.awt.*;
 import java.awt.event.*;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import javax.swing.*;
 import org.netbeans.lib.awtextra.AbsoluteConstraints;

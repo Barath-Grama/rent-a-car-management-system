@@ -10,6 +10,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Reads and writes {@code booking} rows, resolving the customer and car each one
@@ -27,6 +29,8 @@ import java.util.ArrayList;
  * @author @AbdullahShahid01
  */
 public final class BookingDao {
+
+    private static final Logger LOG = LoggerFactory.getLogger(BookingDao.class);
 
     private static final String SELECT =
             "SELECT b.id, b.rent_time, b.return_time, b.customer_id, b.car_id FROM booking b ";
@@ -56,7 +60,7 @@ public final class BookingDao {
                 }
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not read bookings", ex);
         }
         return bookings;
     }
@@ -98,7 +102,7 @@ public final class BookingDao {
                 }
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not list booked cars", ex);
         }
         return cars;
     }
@@ -118,7 +122,7 @@ public final class BookingDao {
             }
             return true;
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not save a new booking", ex);
             return false;
         }
     }
@@ -130,7 +134,7 @@ public final class BookingDao {
             statement.setInt(5, booking.getID());
             return statement.executeUpdate() == 1;
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not update a booking", ex);
             return false;
         }
     }
@@ -157,7 +161,7 @@ public final class BookingDao {
             statement.executeUpdate();
             return true;
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not delete a booking", ex);
             return false;
         }
     }

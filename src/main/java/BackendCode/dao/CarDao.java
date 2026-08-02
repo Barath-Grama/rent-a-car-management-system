@@ -8,6 +8,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Reads and writes {@code car} rows, joining each one to its owner.
@@ -20,6 +22,8 @@ import java.util.ArrayList;
  * @author @AbdullahShahid01
  */
 public final class CarDao {
+
+    private static final Logger LOG = LoggerFactory.getLogger(CarDao.class);
 
     /** Both tables have id, name and cnic columns, so the owner's are aliased. */
     private static final String SELECT =
@@ -50,7 +54,7 @@ public final class CarDao {
                 cars.add(read(rows));
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not list cars", ex);
         }
         return cars;
     }
@@ -62,7 +66,7 @@ public final class CarDao {
                 return rows.next() ? read(rows) : null;
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not read car by id", ex);
             return null;
         }
     }
@@ -75,7 +79,7 @@ public final class CarDao {
                 return rows.next() ? read(rows) : null;
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not read car by registration number", ex);
             return null;
         }
     }
@@ -91,7 +95,7 @@ public final class CarDao {
                 }
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not read cars by name", ex);
         }
         return cars;
     }
@@ -107,7 +111,7 @@ public final class CarDao {
                 }
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not list an owner's cars", ex);
         }
         return cars;
     }
@@ -123,7 +127,7 @@ public final class CarDao {
                 return rows.next();
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not check whether a car is out", ex);
             return false;
         }
     }
@@ -141,7 +145,7 @@ public final class CarDao {
                 cars.add(read(rows));
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not list unbooked cars", ex);
         }
         return cars;
     }
@@ -162,7 +166,7 @@ public final class CarDao {
             }
             return true;
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not save a new car", ex);
             return false;
         }
     }
@@ -175,7 +179,7 @@ public final class CarDao {
             statement.setInt(11, car.getID());
             return statement.executeUpdate() == 1;
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not update a car", ex);
             return false;
         }
     }
@@ -199,7 +203,7 @@ public final class CarDao {
             statement.setInt(1, id);
             return statement.executeUpdate() == 1;
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not delete a car", ex);
             return false;
         }
     }

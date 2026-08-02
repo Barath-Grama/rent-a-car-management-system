@@ -7,6 +7,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Reads and writes {@code customer} rows.
@@ -18,6 +20,8 @@ import java.util.ArrayList;
  * @author @AbdullahShahid01
  */
 public final class CustomerDao {
+
+    private static final Logger LOG = LoggerFactory.getLogger(CustomerDao.class);
 
     private CustomerDao() {
     }
@@ -36,7 +40,7 @@ public final class CustomerDao {
                 customers.add(read(rows));
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not list customers", ex);
         }
         return customers;
     }
@@ -49,7 +53,7 @@ public final class CustomerDao {
                 return rows.next() ? read(rows) : null;
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not read customer by id", ex);
             return null;
         }
     }
@@ -62,7 +66,7 @@ public final class CustomerDao {
                 return rows.next() ? read(rows) : null;
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not read customer by CNIC", ex);
             return null;
         }
     }
@@ -79,7 +83,7 @@ public final class CustomerDao {
                 }
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not read customers by name", ex);
         }
         return customers;
     }
@@ -109,7 +113,7 @@ public final class CustomerDao {
             }
             return true;
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not save a new customer", ex);
             return false;
         }
     }
@@ -124,7 +128,7 @@ public final class CustomerDao {
             statement.setInt(5, customer.getID());
             return statement.executeUpdate() == 1;
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not update a customer", ex);
             return false;
         }
     }
@@ -139,7 +143,7 @@ public final class CustomerDao {
             statement.setInt(1, id);
             return statement.executeUpdate() == 1;
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not delete a customer", ex);
             return false;
         }
     }

@@ -15,12 +15,16 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author @AbdullahShahid01
  */
 public class Parent_JFrame {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Parent_JFrame.class);
 
     private static JFrame MainFrame;
     private final JMenuBar menu_Bar;
@@ -148,7 +152,7 @@ public class Parent_JFrame {
         try {
             Desktop.getDesktop().open(myFile);
         } catch (IOException ex) {
-            System.out.println(ex);
+            LOG.error("could not open the documentation", ex);
             JOptionPane.showMessageDialog(null, "Could not open the " + label + " :\n" + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }

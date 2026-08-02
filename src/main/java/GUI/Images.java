@@ -2,6 +2,8 @@ package GUI;
 
 import java.net.URL;
 import javax.swing.ImageIcon;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Loads the application's images from the classpath.
@@ -19,6 +21,8 @@ import javax.swing.ImageIcon;
  */
 final class Images {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Images.class);
+
     private Images() {
 //        utility holder, never instantiated
     }
@@ -31,7 +35,7 @@ final class Images {
     static ImageIcon load(String fileName) {
         URL url = Images.class.getResource("/images/" + fileName);
         if (url == null) {
-            System.out.println("missing image resource: /images/" + fileName);
+            LOG.warn("missing image resource: /images/" + fileName);
             return new ImageIcon();
         }
         return new ImageIcon(url);

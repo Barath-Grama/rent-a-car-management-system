@@ -1,0 +1,21 @@
+<configuration>
+
+    <!--
+        Several tests deliberately drive failures (a unique violation, a rolled back
+        transaction, a missing image) and the code under test logs those at ERROR.
+        That is correct behaviour, but printing it for every run buries the actual
+        test results, so the suite only shows anything from OFF upward and writes no
+        log file into the scratch directory.
+    -->
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%-5level %logger{0} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="OFF">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>

@@ -9,12 +9,16 @@ import java.util.Calendar;
 import javax.swing.*;
 import org.netbeans.lib.awtextra.AbsoluteConstraints;
 import org.netbeans.lib.awtextra.AbsoluteLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author @AbdullahShahid01
  */
 public final class Car_Update extends JFrame {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Car_Update.class);
 
     // never actually serialized; pinned only to settle the compiler warning
     private static final long serialVersionUID = 1L;
@@ -380,7 +384,7 @@ public final class Car_Update extends JFrame {
 
                         }
                     } catch (HeadlessException | NumberFormatException ex) {
-                        System.out.println(ex);
+                        LOG.error("could not update the car", ex);
                         JOptionPane.showMessageDialog(null, "The record could not be saved :\n" + ex,
                                 "Error", JOptionPane.ERROR_MESSAGE);
                     }

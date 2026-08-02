@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Checks the login details entered on the Login screen.
@@ -26,6 +28,8 @@ import java.util.Properties;
  * @author @AbdullahShahid01
  */
 public class Credentials {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Credentials.class);
 
     private static final String FILE_NAME = "credentials.properties";
     private static final String USERNAME_KEY = "username";
@@ -69,13 +73,13 @@ public class Credentials {
             input = new FileInputStream(file);
             properties.load(input);
         } catch (IOException ex) {
-            System.out.println(ex);
+            LOG.error("could not read the credentials file", ex);
         } finally {
             if (input != null) {
                 try {
                     input.close();
                 } catch (IOException ex) {
-                    System.out.println(ex);
+                    LOG.error("could not read the credentials file", ex);
                 }
             }
         }
@@ -88,13 +92,13 @@ public class Credentials {
             output = new FileOutputStream(file);
             properties.store(output, "Rent-A-Car login details. Delete this file to reset to admin / 123.");
         } catch (IOException ex) {
-            System.out.println(ex);
+            LOG.error("could not write the credentials file", ex);
         } finally {
             if (output != null) {
                 try {
                     output.close();
                 } catch (IOException ex) {
-                    System.out.println(ex);
+                    LOG.error("could not write the credentials file", ex);
                 }
             }
         }
@@ -117,10 +121,10 @@ public class Credentials {
             }
             return hex.toString();
         } catch (NoSuchAlgorithmException ex) {
-            System.out.println(ex);
+            LOG.error("could not hash the password", ex);
             return null;
         } catch (IOException ex) {
-            System.out.println(ex);
+            LOG.error("could not hash the password", ex);
             return null;
         }
     }

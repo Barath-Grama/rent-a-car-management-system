@@ -14,6 +14,8 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Carries the old {@code .ser} records into the database, once.
@@ -33,6 +35,8 @@ import java.util.Map;
  * @author @AbdullahShahid01
  */
 public final class SerImporter {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SerImporter.class);
 
     private SerImporter() {
     }
@@ -65,17 +69,16 @@ public final class SerImporter {
                 insertCars(connection, cars, owners);
                 insertBookings(connection, bookings);
                 connection.commit();
-                System.out.println("imported legacy records: " + owners.size() + " owners, "
-                        + customers.size() + " customers, " + cars.size() + " cars, "
-                        + bookings.size() + " bookings");
+                LOG.info("imported legacy records: {} owners, {} customers, {} cars, {} bookings",
+                        owners.size(), customers.size(), cars.size(), bookings.size());
             } catch (SQLException ex) {
                 connection.rollback();
-                System.out.println("legacy import rolled back: " + ex);
+                LOG.error("legacy import rolled back", ex);
             } finally {
                 connection.setAutoCommit(autoCommit);
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("legacy import failed", ex);
         }
     }
 
@@ -112,14 +115,14 @@ public final class SerImporter {
                 } catch (EOFException end) {
                     break;
                 } catch (ClassNotFoundException ex) {
-                    System.out.println(ex);
+                    LOG.error("could not read a legacy .ser file", ex);
                     break;
                 }
             }
         } catch (EOFException empty) {
 //            a zero-length file, which is what an interrupted write left behind
         } catch (IOException ex) {
-            System.out.println("could not read " + fileName + ": " + ex);
+            LOG.warn("could not read " + fileName + ": " + ex);
         }
         return records;
     }
@@ -168,7 +171,7 @@ public final class SerImporter {
 //                the embedded owner copy could point at an owner that had since been
 //                deleted; such a car cannot satisfy the foreign key, so it is skipped
                 if (owner == null || !knownOwners.containsKey(owner.getID())) {
-                    System.out.println("skipping car " + car.getID() + ": its owner no longer exists");
+                    LOG.warn("skipping car " + car.getID() + ": its owner no longer exists");
                     continue;
                 }
                 statement.setInt(1, car.getID());
@@ -194,7 +197,7 @@ public final class SerImporter {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (Booking booking : bookings) {
                 if (booking.getCustomer() == null || booking.getCar() == null) {
-                    System.out.println("skipping booking " + booking.getID() + ": incomplete record");
+                    LOG.warn("skipping booking " + booking.getID() + ": incomplete record");
                     continue;
                 }
                 statement.setInt(1, booking.getID());

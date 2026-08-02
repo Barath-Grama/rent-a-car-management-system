@@ -1,12 +1,10 @@
 package GUI;
 
-import BackendCode.Booking;
 import BackendCode.Car;
-import BackendCode.CarOwner;
-import BackendCode.Customer;
+import BackendCode.service.RentalService;
+import BackendCode.service.ServiceResult;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
 import javax.swing.*;
 import static javax.swing.JOptionPane.OK_CANCEL_OPTION;
 
@@ -105,33 +103,15 @@ public final class Booking_UnBookCar extends JFrame {
                     int showConfirmDialog = JOptionPane.showConfirmDialog(null, "You are about to UnBook this Car\n" + car.toString()
                             + "\n Are you sure you want to continue ??", "UnBook Confirmation", OK_CANCEL_OPTION);
                     if (showConfirmDialog == 0) {
-
-                        ArrayList<Booking> booking = Booking.SearchByCarID(Integer.parseInt(carID));
-                        Booking last = booking.get((booking.size() - 1));
-                        last.setReturnTime(System.currentTimeMillis());
-                        if (!SaveReport.check(last.Update())) {
+//                        Closing the booking, crediting the owner and charging the
+//                        customer are one transaction inside the service. This window
+//                        only reports what it decided.
+                        ServiceResult result = RentalService.returnCar(car.getID());
+                        if (!result.isSuccess()) {
+                            JOptionPane.showMessageDialog(null, result.getMessage(),
+                                    "Error", JOptionPane.ERROR_MESSAGE);
+                            setEnabled(true);
                             return;
-                        }
-
-                        int bill = last.calculateBill();
-
-//                        The Booking holds copies of the Car Owner and the Customer as they
-//                        were when the car was booked. Their Balance/Bill in those copies is
-//                        stale, so both are re-read from their own files before the bill is
-//                        added -- otherwise this write wipes out everything earned or charged
-//                        since the booking was made.
-                        CarOwner carOwner = CarOwner.SearchByID(last.getCar().getCarOwner().getID());
-                        if (carOwner != null) {
-                            carOwner.setBalance((carOwner.getBalance() + bill));
-//                            the car is already returned at this point, so a failed
-//                            balance write is reported but does not abort the unbook
-                            SaveReport.check(carOwner.Update());
-                        }
-
-                        Customer customer = Customer.SearchByID(last.getCustomer().getID());
-                        if (customer != null) {
-                            customer.setBill(customer.getBill() + bill);
-                            SaveReport.check(customer.Update());
                         }
 
                         Parent_JFrame.getMainFrame().getContentPane().removeAll();
@@ -139,7 +119,7 @@ public final class Booking_UnBookCar extends JFrame {
                         Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                         Parent_JFrame.getMainFrame().getContentPane().revalidate();
                         Parent_JFrame.getMainFrame().getContentPane().repaint();
-                        JOptionPane.showMessageDialog(null, "Car Successfully UnBooked !");
+                        JOptionPane.showMessageDialog(null, result.getMessage());
                         Parent_JFrame.getMainFrame().setEnabled(true);
                         dispose();
                     } else {

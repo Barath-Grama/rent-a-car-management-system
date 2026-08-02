@@ -1,6 +1,8 @@
 package GUI;
 
 import BackendCode.Car;
+import BackendCode.service.RentalService;
+import BackendCode.service.ServiceResult;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -65,28 +67,27 @@ public final class Car_Remove extends JFrame {
 //                            if (carID != null) {
                             Car car = Car.SearchByID(Integer.parseInt(carID));
                             if (car != null) {
-//                                removing a car that is still out would leave its Booking
-//                                pointing at a car that no longer exists
-                                if (car.isRented()) {
-                                    JOptionPane.showMessageDialog(null, "This car is currently booked !"
-                                            + "\nUnBook it before removing it.");
-                                } else {
-                                    int showConfirmDialog = JOptionPane.showConfirmDialog(null, "You are about to remove this car \n "
-                                            + car.toString() + "\n Are you sure you want to continue ??", "Confirmation",
-                                            JOptionPane.OK_CANCEL_OPTION);
-                                    if (showConfirmDialog == 0) {
-                                        if (!SaveReport.check(car.Remove())) {
-                                            return;
-                                        }
-                                        Parent_JFrame.getMainFrame().getContentPane().removeAll();
-                                        Car_Details cd = new Car_Details();
-                                        Parent_JFrame.getMainFrame().add(cd.getMainPanel());
-                                        Parent_JFrame.getMainFrame().getContentPane().revalidate();
-                                        Parent_JFrame.getMainFrame().getContentPane().repaint();
-
-                                        Parent_JFrame.getMainFrame().setEnabled(true);
-                                        dispose();
+                                int showConfirmDialog = JOptionPane.showConfirmDialog(null, "You are about to remove this car \n "
+                                        + car.toString() + "\n Are you sure you want to continue ??", "Confirmation",
+                                        JOptionPane.OK_CANCEL_OPTION);
+                                if (showConfirmDialog == 0) {
+//                                    whether a car may go, and what happens to its
+//                                    bookings, is the service's call
+                                    ServiceResult result = RentalService.removeCar(car.getID());
+                                    if (!result.isSuccess()) {
+                                        JOptionPane.showMessageDialog(null, result.getMessage(),
+                                                "Error", JOptionPane.ERROR_MESSAGE);
+                                        return;
                                     }
+                                    Parent_JFrame.getMainFrame().getContentPane().removeAll();
+                                    Car_Details cd = new Car_Details();
+                                    Parent_JFrame.getMainFrame().add(cd.getMainPanel());
+                                    Parent_JFrame.getMainFrame().getContentPane().revalidate();
+                                    Parent_JFrame.getMainFrame().getContentPane().repaint();
+
+                                    JOptionPane.showMessageDialog(null, result.getMessage());
+                                    Parent_JFrame.getMainFrame().setEnabled(true);
+                                    dispose();
                                 }
                             } else {
                                 JOptionPane.showMessageDialog(null, "Car ID not found !");

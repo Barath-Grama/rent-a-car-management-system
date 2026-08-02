@@ -1,0 +1,190 @@
+package BackendCode.service;
+
+import BackendCode.Booking;
+import BackendCode.Car;
+import BackendCode.CarOwner;
+import BackendCode.Customer;
+import BackendCode.Database;
+import BackendCode.dao.BookingDao;
+import BackendCode.dao.CarDao;
+import BackendCode.dao.CarOwnerDao;
+import BackendCode.dao.CustomerDao;
+import java.util.ArrayList;
+
+/**
+ * The rules of renting a car out and taking it back.
+ * <p>
+ * These used to live inside Swing action listeners. {@code Booking_UnBookCar} read
+ * the booking, worked out the bill, credited the owner and charged the customer, all
+ * in the body of a button handler. That is why the money bug was possible: three
+ * separate writes with nothing tying them together, each able to fail on its own and
+ * leave the books disagreeing. It is also why none of it could be tested without
+ * opening a window.
+ * <p>
+ * Everything that touches money now goes through one transaction.
+ *
+ * @author @AbdullahShahid01
+ */
+public final class RentalService {
+
+    private RentalService() {
+    }
+
+    /**
+     * Books a car to a customer.
+     *
+     * @param carId      the car to rent out
+     * @param customerId the customer renting it
+     * @return what happened, with a message for the user
+     */
+    public static ServiceResult bookCar(int carId, int customerId) {
+        Car car = CarDao.findById(carId);
+        if (car == null) {
+            return ServiceResult.failed("Car ID does not exist !");
+        }
+        Customer customer = CustomerDao.findById(customerId);
+        if (customer == null) {
+            return ServiceResult.failed("Customer ID does not exist !");
+        }
+        if (CarDao.isRented(carId)) {
+            return ServiceResult.failed("This car is already booked !");
+        }
+
+        Booking booking = new Booking(0, customer, car, System.currentTimeMillis(), 0);
+        if (!booking.Add()) {
+            return ServiceResult.failed("The booking could not be saved.");
+        }
+        return ServiceResult.ok("Car Successfully Booked !");
+    }
+
+    /**
+     * Takes a car back: closes its open booking, charges the customer for the time it
+     * was out and credits the owner the same amount.
+     * <p>
+     * The three writes commit together or not at all. Both the owner and the customer
+     * are re-read here rather than taken from the booking, which is a habit worth
+     * keeping even though the database no longer stores stale copies of them.
+     *
+     * @param carId the car being returned
+     * @return what happened, with a message for the user
+     */
+    public static ServiceResult returnCar(int carId) {
+        Car car = CarDao.findById(carId);
+        if (car == null) {
+            return ServiceResult.failed("Car ID does not exist !");
+        }
+        Booking open = openBookingFor(carId);
+        if (open == null) {
+            return ServiceResult.failed("This car is not booked !");
+        }
+
+        open.setReturnTime(System.currentTimeMillis());
+        int bill = open.calculateBill();
+
+        boolean committed = Database.inTransaction(() -> {
+            if (!BookingDao.update(open)) {
+                return false;
+            }
+            CarOwner owner = CarOwnerDao.findById(open.getCar().getCarOwner().getID());
+            if (owner == null) {
+                return false;
+            }
+            owner.setBalance(owner.getBalance() + bill);
+            if (!CarOwnerDao.update(owner)) {
+                return false;
+            }
+            Customer customer = CustomerDao.findById(open.getCustomer().getID());
+            if (customer == null) {
+                return false;
+            }
+            customer.setBill(customer.getBill() + bill);
+            return CustomerDao.update(customer);
+        });
+
+        if (!committed) {
+            return ServiceResult.failed("The return could not be completed, so nothing was changed.");
+        }
+        return ServiceResult.ok("Car Successfully UnBooked !\nRent charged: " + bill);
+    }
+
+    /**
+     * @return the car's booking that has not been returned, or null if it is not out
+     */
+    public static Booking openBookingFor(int carId) {
+        ArrayList<Booking> bookings = BookingDao.findByCar(carId);
+        for (int i = bookings.size() - 1; i >= 0; i--) {
+            if (bookings.get(i).getReturnTime() == 0) {
+                return bookings.get(i);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Removes a car, refusing while it is still out. Its booking history goes with it
+     * by cascade.
+     *
+     * @param carId the car to remove
+     * @return what happened, with a message for the user
+     */
+    public static ServiceResult removeCar(int carId) {
+        Car car = CarDao.findById(carId);
+        if (car == null) {
+            return ServiceResult.failed("Car ID not found !");
+        }
+        if (CarDao.isRented(carId)) {
+            return ServiceResult.failed("This car is currently booked !"
+                    + "\nUnBook it before removing it.");
+        }
+        if (!car.Remove()) {
+            return ServiceResult.failed("The car could not be removed.");
+        }
+        return ServiceResult.ok("Record successfully Removed !");
+    }
+
+    /**
+     * Removes an owner and, by cascade, their cars and those cars' bookings. Refuses
+     * while any of their cars is still out, so a rental in progress cannot be deleted
+     * out from under the customer who has the car.
+     *
+     * @param ownerId the owner to remove
+     * @return what happened, with a message for the user
+     */
+    public static ServiceResult removeOwner(int ownerId) {
+        CarOwner owner = CarOwnerDao.findById(ownerId);
+        if (owner == null) {
+            return ServiceResult.failed("This ID does not exist !");
+        }
+        StringBuilder stillOut = new StringBuilder();
+        for (Car car : CarDao.findByOwner(ownerId)) {
+            if (CarDao.isRented(car.getID())) {
+                stillOut.append("\n").append(car.getID()).append(": ").append(car.getName());
+            }
+        }
+        if (stillOut.length() > 0) {
+            return ServiceResult.failed("This Car Owner still has cars that are booked :"
+                    + stillOut + "\nUnBook them before removing the owner.");
+        }
+        if (!owner.Remove()) {
+            return ServiceResult.failed("The car owner could not be removed.");
+        }
+        return ServiceResult.ok("Record successfully Removed !");
+    }
+
+    /**
+     * Removes a customer and, by cascade, their bookings.
+     *
+     * @param customerId the customer to remove
+     * @return what happened, with a message for the user
+     */
+    public static ServiceResult removeCustomer(int customerId) {
+        Customer customer = CustomerDao.findById(customerId);
+        if (customer == null) {
+            return ServiceResult.failed("This ID does not exist !");
+        }
+        if (!customer.Remove()) {
+            return ServiceResult.failed("The customer could not be removed.");
+        }
+        return ServiceResult.ok("Record successfully Removed !");
+    }
+}

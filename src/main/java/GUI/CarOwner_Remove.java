@@ -1,10 +1,10 @@
 package GUI;
 
-import BackendCode.Car;
 import BackendCode.CarOwner;
+import BackendCode.service.RentalService;
+import BackendCode.service.ServiceResult;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
 import javax.swing.*;
 import org.netbeans.lib.awtextra.AbsoluteConstraints;
 import org.netbeans.lib.awtextra.AbsoluteLayout;
@@ -64,42 +64,30 @@ public class CarOwner_Remove {
                     if (CarOwner.isIDvalid(id)) {
                         CarOwner carOwner = CarOwner.SearchByID(Integer.parseInt(id));
                         if (carOwner != null) {
-//                            removing this owner deletes all of their cars, so any car
-//                            that is still out has to come back first -- otherwise its
-//                            Booking is left pointing at a car that no longer exists
-                            ArrayList<Car> cars = carOwner.getAllCars();
-                            String rentedCars = "";
-                            for (int i = 0; i < cars.size(); i++) {
-                                if (cars.get(i).isRented()) {
-                                    rentedCars += "\n" + cars.get(i).getID() + ": " + cars.get(i).getName();
-                                }
-                            }
-                            if (!rentedCars.isEmpty()) {
-                                JOptionPane.showMessageDialog(null, "This Car Owner still has cars that are booked :"
-                                        + rentedCars + "\nUnBook them before removing the owner.");
-                            } else {
-                                int showConfirmDialog = JOptionPane.showConfirmDialog(frame, "You are about to remove the following Car Owner.\n"+carOwner.toString()+"\nAll the data including Cars and Balance for this car owner will also be deleted  !"
-                                        + "\n Are you sure you want to continue ??", "Remove Car Owner", JOptionPane.OK_CANCEL_OPTION);
-                                if (showConfirmDialog == 0) {
-//                                    The owner's cars, and each car's bookings, go with
-//                                    them: the foreign keys cascade in one atomic step,
-//                                    so a failure part way through cannot leave the
-//                                    owner deleted but some of their cars behind.
-                                    if (!SaveReport.check(carOwner.Remove())) {
-                                        return;
-                                    }
-                                    Parent_JFrame.getMainFrame().getContentPane().removeAll();
-                                    CarOwner_Details cd = new CarOwner_Details();
-                                    Parent_JFrame.getMainFrame().add(cd.getMainPanel());
-                                    Parent_JFrame.getMainFrame().getContentPane().revalidate();
-                                    Parent_JFrame.getMainFrame().getContentPane().repaint();
-                                    JOptionPane.showMessageDialog(null, "Record successfully Removed !");
-                                    Parent_JFrame.getMainFrame().setEnabled(true);
-                                    frame.dispose();
-                                } else {
-
+                            int showConfirmDialog = JOptionPane.showConfirmDialog(frame, "You are about to remove the following Car Owner.\n"+carOwner.toString()+"\nAll the data including Cars and Balance for this car owner will also be deleted  !"
+                                    + "\n Are you sure you want to continue ??", "Remove Car Owner", JOptionPane.OK_CANCEL_OPTION);
+                            if (showConfirmDialog == 0) {
+//                                Whether an owner may go, and what goes with them, is
+//                                the service's call; it refuses while any of their cars
+//                                is still out.
+                                ServiceResult result = RentalService.removeOwner(carOwner.getID());
+                                if (!result.isSuccess()) {
+                                    JOptionPane.showMessageDialog(null, result.getMessage(),
+                                            "Error", JOptionPane.ERROR_MESSAGE);
                                     frame.setEnabled(true);
+                                    return;
                                 }
+                                Parent_JFrame.getMainFrame().getContentPane().removeAll();
+                                CarOwner_Details cd = new CarOwner_Details();
+                                Parent_JFrame.getMainFrame().add(cd.getMainPanel());
+                                Parent_JFrame.getMainFrame().getContentPane().revalidate();
+                                Parent_JFrame.getMainFrame().getContentPane().repaint();
+                                JOptionPane.showMessageDialog(null, result.getMessage());
+                                Parent_JFrame.getMainFrame().setEnabled(true);
+                                frame.dispose();
+                            } else {
+
+                                frame.setEnabled(true);
                             }
 
                         } else {

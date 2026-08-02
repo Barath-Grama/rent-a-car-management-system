@@ -6,12 +6,16 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.Calendar;
 import javax.swing.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author @AbdullahShahid01
  */
 public final class Car_Add extends JFrame {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Car_Add.class);
 
     // Swing windows are Serializable by inheritance and this one is never actually
     // serialized, but pinning the ID keeps the compiler quiet about it.
@@ -274,7 +278,7 @@ public final class Car_Add extends JFrame {
                         }
                     }
                 } catch (HeadlessException | NumberFormatException ex) {
-                    System.out.println(ex);
+                    LOG.error("could not add the car", ex);
                     JOptionPane.showMessageDialog(null, "The record could not be saved :\n" + ex,
                             "Error", JOptionPane.ERROR_MESSAGE);
                 }

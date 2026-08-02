@@ -1,6 +1,8 @@
 package GUI;
 
 import BackendCode.Customer;
+import BackendCode.service.RentalService;
+import BackendCode.service.ServiceResult;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -71,7 +73,11 @@ public class Customer_Remove {
 //                                cascades, in one atomic step. This used to be a loop
 //                                over a stale snapshot calling a remove routine that
 //                                could destroy records it was never asked to touch.
-                                if (!SaveReport.check(customer.Remove())) {
+                                ServiceResult result = RentalService.removeCustomer(customer.getID());
+                                if (!result.isSuccess()) {
+                                    JOptionPane.showMessageDialog(null, result.getMessage(),
+                                            "Error", JOptionPane.ERROR_MESSAGE);
+                                    frame.setEnabled(true);
                                     return;
                                 }
 
@@ -80,7 +86,7 @@ public class Customer_Remove {
                                 Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                                 Parent_JFrame.getMainFrame().getContentPane().revalidate();
                                 Parent_JFrame.getMainFrame().getContentPane().repaint();
-                                JOptionPane.showMessageDialog(null, "Record successfully Removed !");
+                                JOptionPane.showMessageDialog(null, result.getMessage());
                                 Parent_JFrame.getMainFrame().setEnabled(true);
                                 frame.dispose();
                             } else {

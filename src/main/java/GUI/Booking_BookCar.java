@@ -1,8 +1,9 @@
 package GUI;
 
-import BackendCode.Booking;
 import BackendCode.Car;
 import BackendCode.Customer;
+import BackendCode.service.RentalService;
+import BackendCode.service.ServiceResult;
 import java.awt.*;
 import java.awt.event.*;
 import java.text.SimpleDateFormat;
@@ -144,8 +145,11 @@ public final class Booking_BookCar extends JFrame {
                             + customer.toString() + "\n Are you sure you want to continue??",
                             "Book Confirmation", JOptionPane.OK_CANCEL_OPTION);
                     if (showConfirmDialog == 0) {
-                        Booking booking = new Booking(0, customer, car, System.currentTimeMillis(), 0);
-                        if (!SaveReport.check(booking.Add())) {
+                        ServiceResult result = RentalService.bookCar(car.getID(), customer.getID());
+                        if (!result.isSuccess()) {
+                            JOptionPane.showMessageDialog(null, result.getMessage(),
+                                    "Error", JOptionPane.ERROR_MESSAGE);
+                            setEnabled(true);
                             return;
                         }
                         Parent_JFrame.getMainFrame().getContentPane().removeAll();
@@ -153,7 +157,7 @@ public final class Booking_BookCar extends JFrame {
                         Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                         Parent_JFrame.getMainFrame().getContentPane().revalidate();
                         Parent_JFrame.getMainFrame().getContentPane().repaint();
-                        JOptionPane.showMessageDialog(null, "Car Successfully Booked !");
+                        JOptionPane.showMessageDialog(null, result.getMessage());
                         Parent_JFrame.getMainFrame().setEnabled(true);
                         dispose();
                     } else {

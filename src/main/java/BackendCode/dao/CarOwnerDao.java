@@ -7,6 +7,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Reads and writes {@code car_owner} rows.
@@ -14,6 +16,8 @@ import java.util.ArrayList;
  * @author @AbdullahShahid01
  */
 public final class CarOwnerDao {
+
+    private static final Logger LOG = LoggerFactory.getLogger(CarOwnerDao.class);
 
     private CarOwnerDao() {
     }
@@ -32,7 +36,7 @@ public final class CarOwnerDao {
                 owners.add(read(rows));
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not list car owners", ex);
         }
         return owners;
     }
@@ -45,7 +49,7 @@ public final class CarOwnerDao {
                 return rows.next() ? read(rows) : null;
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not read car owner by id", ex);
             return null;
         }
     }
@@ -58,7 +62,7 @@ public final class CarOwnerDao {
                 return rows.next() ? read(rows) : null;
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not read car owner by CNIC", ex);
             return null;
         }
     }
@@ -75,7 +79,7 @@ public final class CarOwnerDao {
                 }
             }
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not read car owners by name", ex);
         }
         return owners;
     }
@@ -98,7 +102,7 @@ public final class CarOwnerDao {
             }
             return true;
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not save a new car owner", ex);
             return false;
         }
     }
@@ -113,7 +117,7 @@ public final class CarOwnerDao {
             statement.setInt(5, owner.getID());
             return statement.executeUpdate() == 1;
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not update a car owner", ex);
             return false;
         }
     }
@@ -128,7 +132,7 @@ public final class CarOwnerDao {
             statement.setInt(1, id);
             return statement.executeUpdate() == 1;
         } catch (SQLException ex) {
-            System.out.println(ex);
+            LOG.error("could not delete a car owner", ex);
             return false;
         }
     }

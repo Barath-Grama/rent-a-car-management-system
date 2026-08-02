@@ -11,7 +11,7 @@ import java.io.Serializable;
  * that happened to have it -- plain ant or javac could not resolve the classpath.
  * Keeping the two classes in the source tree makes the project build anywhere.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 public class AbsoluteConstraints implements Serializable {
 

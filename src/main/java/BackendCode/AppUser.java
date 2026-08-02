@@ -3,7 +3,7 @@ package BackendCode;
 /**
  * Somebody who can sign in, and what they are allowed to do.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 public final class AppUser {
 

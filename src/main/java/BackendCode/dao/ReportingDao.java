@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  * That rate is editable: recomputing would mean every price change quietly rewrote
  * the history of takings for that car.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 public final class ReportingDao {
 

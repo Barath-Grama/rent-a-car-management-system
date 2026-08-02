@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  * syntax. Failures are reported as {@code false} to the caller, which is what puts an
  * error on screen instead of a success message.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 public final class CustomerDao {
 

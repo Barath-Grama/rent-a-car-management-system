@@ -6,52 +6,30 @@
 ![tests](https://img.shields.io/badge/tests-85%20passing-brightgreen)
 ![coverage](https://img.shields.io/badge/coverage-64%25%20instruction-yellowgreen)
 
-A Java Swing desktop application for running a car rental business: the fleet, the
-owners who supply it, the customers who rent from it, and the money that moves between
-them.
+A Java desktop application for running a car rental business: the fleet, the owners who
+supply it, the customers who rent from it, and the money that moves between them.
+SQLite behind a DAO and service layer, 85 tests, CI on every push.
 
 ![Dashboard](docs/dashboard.png)
 
 ---
 
-## What this repository is
-
-It began as [AbdullahShahid01/Rent-a-Car-Management-System](https://github.com/AbdullahShahid01/Rent-a-Car-Management-System),
-a semester OOP project whose README declared it unmaintained. That version stored its
-records as raw serialized Java objects in four files, had no tests, no continuous
-integration and no dependency-managed build, and could only be compiled from inside a
-NetBeans installation that happened to have a particular IDE library registered.
-
-I read all 24 source files, wrote up the defects I found, and rebuilt the parts that
-were wrong. **[ENGINEERING.md](ENGINEERING.md) is the write-up** — 37 defects with
-their root cause, a reproduction, the fix, and the evidence for each. If you only read
-one thing here, read that.
-
-Original author: **Abdullah Shahid** ([@AbdullahShahid01](https://github.com/AbdullahShahid01)),
-with a contribution from [@SaadBinAbiWaqas](https://github.com/SaadBinAbiWaqas).
-Everything described under *What changed* below is my work.
-
----
-
 ## Running it
 
-Needs a JDK 21 or newer. Nothing else — no database to install, no IDE, no
-library to register.
+Needs a JDK 21 or newer. Nothing else — no database to install, no IDE, no library to
+register.
 
 ```bash
 mvn clean package
 java -jar target/rent-a-car.jar
 ```
 
-Sign in with **`admin` / `123`**. That account is created the first time the program
-runs against an empty database; change its password before anyone else can reach the
-machine. Data lands in `rentacar.db` in the working directory, and the first run
-imports any legacy `.ser` files it finds beside it.
-
-Run the tests with:
+Sign in with **`admin` / `123`**, created the first time the program runs against an
+empty database. Change it before anyone else can reach the machine. Data lands in
+`rentacar.db` in the working directory.
 
 ```bash
-mvn verify
+mvn verify     # 85 tests
 ```
 
 ---
@@ -61,7 +39,7 @@ mvn verify
 | | |
 |---|---|
 | **Fleet, owners, customers** | Add, edit and remove records, with the constraints enforced by the database rather than by hand |
-| **Booking** | Rent a car to a customer, take it back, and have the bill charged and the owner credited in one transaction |
+| **Booking** | Rent a car out, take it back, and have the bill charged and the owner credited in one transaction |
 | **Dashboard** | Revenue by month, top earning cars, top customers, fleet utilisation — all from aggregate SQL |
 | **Filter and sort** | Every list narrows as you type and sorts on any column |
 | **CSV export** | Writes exactly what you are looking at: the filtered rows, in the sorted order |
@@ -80,7 +58,7 @@ mvn verify
 
 ---
 
-## How it is put together
+## Architecture
 
 ```mermaid
 flowchart TD
@@ -121,19 +99,25 @@ do not decide business questions.** A screen validates what was typed, calls a s
 and shows what the service decided. Everything that moves money runs inside one
 transaction.
 
-### Tech
+**Java 21 · Swing · SQLite (JDBC) · Maven · JUnit 5 · JaCoCo · SLF4J + Logback ·
+BCrypt · GitHub Actions**
 
-Java 21 · Swing · SQLite (JDBC) · Maven · JUnit 5 · JaCoCo · SLF4J + Logback ·
-BCrypt · GitHub Actions
-
-No IDE-specific project files, and no external dependency that has to be installed by
-hand — the absolute-positioning layout manager the screens are built on lives in the
-source tree precisely because relying on an IDE-global library is what made the
-original unbuildable outside NetBeans.
+No IDE-specific project files and no dependency that has to be installed by hand — the
+absolute-positioning layout manager the screens are built on lives in the source tree
+rather than being pulled from an IDE-global library.
 
 ---
 
-## What changed
+## The engineering
+
+This started from an abandoned semester project: records kept as raw serialized Java
+objects in four files, no tests, no CI, no dependency-managed build, and a classpath
+that could only be resolved from inside one particular IDE installation.
+
+I read all 24 source files, wrote up every defect I found, and rebuilt what was wrong.
+**[ENGINEERING.md](ENGINEERING.md) is that write-up** — 37 defects with root cause, a
+reproduction, the fix, and the recorded output for each. It also documents four
+mistakes I made along the way, because the corrections are the useful part.
 
 | | Before | Now |
 |---|---|---|
@@ -147,30 +131,39 @@ original unbuildable outside NetBeans.
 
 The defect that best explains why the rewrite was worth doing: a booking stored its own
 frozen copies of the customer and the car. Returning a car added the bill to *that*
-copy's balance and wrote it back, so a second rental silently erased the earnings of
-the first. Two rentals worth 200 and 400 left the owner with 400. Rows referencing rows
-by id made the whole class of bug impossible rather than patched.
+copy's balance and wrote it back, so a second rental silently erased the earnings of the
+first — two rentals worth 200 and 400 left the owner with 400. Rows referencing rows by
+id made the whole class of bug impossible rather than patched.
+
+Written from scratch during the rebuild: the persistence layer (`Database`, five DAOs,
+the schema and its migration), the service layer (`RentalService`, `UserService`,
+`ServiceResult`), the reporting and dashboard (`ReportingDao`, `Dashboard`, `BarChart`),
+the table tooling (`TableTools`), the legacy importer (`SerImporter`), the vendored
+layout manager, and the whole test suite.
 
 ---
 
 ## Known limitations
 
 - **Bookings are instant, not scheduled.** You rent a car now and return it now; there
-  is no reserving one for next Tuesday. That is the largest thing the domain model is
-  missing.
-- **The Swing screens have no automated tests.** They are about 4,000 of the 6,700
-  lines here. Driving them would need a UI-testing library for little return, so
-  coverage is reported over the model, service and DAO layers, which is what the suite
-  actually exercises. The screens were checked by hand.
+  is no reserving one for next Tuesday. That is the largest gap in the domain model.
+- **The Swing screens have no automated tests.** They are about 4,000 of the 6,700 lines
+  here. Driving them would need a UI-testing library for little return, so coverage is
+  reported over the model, service and DAO layers, which is what the suite actually
+  exercises. The screens were checked by hand.
 - **Single user, single machine.** One SQLite file, one connection, no networking.
-- **Two result conventions.** Screens that call a service read a `ServiceResult`;
-  the Add and Update dialogs still call the model directly and check a boolean through
+- **Two result conventions.** Screens that call a service read a `ServiceResult`; the
+  Add and Update dialogs still call the model directly and check a boolean through
   `SaveReport`. They should be one thing.
 
 ---
 
-## Licence and credit
+## Credits
 
-The original project carried no licence file. This fork keeps the original author's
-`@author` tags on the files they wrote. Please credit Abdullah Shahid for the original
-work if you use it.
+Built on the original Rent-A-Car Management System by **Abdullah Shahid**
+([@AbdullahShahid01](https://github.com/AbdullahShahid01)), with a contribution from
+[@SaadBinAbiWaqas](https://github.com/SaadBinAbiWaqas). Their commits are preserved in
+this repository's history, and the files they wrote keep their `@author` tags; the
+files listed above as written during the rebuild carry mine.
+
+The original project carried no licence file.

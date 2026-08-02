@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  * so that is done here rather than left to the schema file: the {@code ON DELETE
  * CASCADE} rules only do anything once this pragma is set.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 public final class Database {
 

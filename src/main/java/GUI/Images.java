@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  * Resource names are case-sensitive inside a jar even on Windows, so the names here
  * must match the files in {@code src/main/resources/images} exactly.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 final class Images {
 

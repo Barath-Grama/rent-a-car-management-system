@@ -15,7 +15,7 @@ import java.util.HashMap;
  * See {@link AbsoluteConstraints} for why these two classes live in the source tree
  * rather than coming from the NetBeans IDE library.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 public class AbsoluteLayout implements LayoutManager2, Serializable {
 

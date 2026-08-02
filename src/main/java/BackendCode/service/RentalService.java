@@ -23,7 +23,7 @@ import java.util.ArrayList;
  * <p>
  * Everything that touches money now goes through one transaction.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 public final class RentalService {
 

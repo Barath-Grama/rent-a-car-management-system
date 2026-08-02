@@ -22,7 +22,7 @@ import org.netbeans.lib.awtextra.AbsoluteLayout;
  * Every figure comes from an aggregate query rather than from walking the tables in
  * Java, so adding rows does not make this screen slower.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 public final class Dashboard implements ActionListener {
 

@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Reads and writes {@code car_owner} rows.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 public final class CarOwnerDao {
 

@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
  * On a database with no users at all this seeds the {@code admin} / {@code 123}
  * account the project has always documented, so a fresh checkout still starts.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 public final class UserService {
 

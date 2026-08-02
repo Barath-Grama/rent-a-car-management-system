@@ -18,7 +18,7 @@ import javax.swing.JPanel;
  * labels and a message when there is nothing to show. Anything more involved --
  * zooming, legends, time axes -- and a real library would earn its place.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 final class BarChart extends JPanel {
 

@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * into it -- while the table you were looking at did not move. Typing in the filter
  * box now narrows the table itself as you type, and any column header sorts.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 final class TableTools {
 

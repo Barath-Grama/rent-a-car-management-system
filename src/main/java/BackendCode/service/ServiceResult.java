@@ -8,7 +8,7 @@ package BackendCode.service;
  * followed by a success dialog. A service returns one of these and the screen only
  * has to display it.
  *
- * @author @AbdullahShahid01
+ * @author @Barath-Grama
  */
 public final class ServiceResult {
 

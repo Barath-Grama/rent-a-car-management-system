@@ -81,12 +81,10 @@ public class CarOwner_Remove {
                                 int showConfirmDialog = JOptionPane.showConfirmDialog(frame, "You are about to remove the following Car Owner.\n"+carOwner.toString()+"\nAll the data including Cars and Balance for this car owner will also be deleted  !"
                                         + "\n Are you sure you want to continue ??", "Remove Car Owner", JOptionPane.OK_CANCEL_OPTION);
                                 if (showConfirmDialog == 0) {
-                                    // ** Delete all cars for this car owner **
-                                    for (int i = 0; i < cars.size(); i++) {
-                                        if (!SaveReport.check(cars.get(i).Remove())) {
-                                            return;
-                                        }
-                                    }
+//                                    The owner's cars, and each car's bookings, go with
+//                                    them: the foreign keys cascade in one atomic step,
+//                                    so a failure part way through cannot leave the
+//                                    owner deleted but some of their cars behind.
                                     if (!SaveReport.check(carOwner.Remove())) {
                                         return;
                                     }

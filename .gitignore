@@ -5,7 +5,7 @@ target/
 build/
 
 # Runtime data written next to the program, not source
-*.id
+rentacar.db
 credentials.properties
 
 # IDE

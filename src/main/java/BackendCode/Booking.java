@@ -1,12 +1,7 @@
 package BackendCode;
 
-import java.io.EOFException;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import BackendCode.dao.BookingDao;
+import BackendCode.dao.CarDao;
 import java.io.Serializable;
 import java.util.ArrayList;
 
@@ -16,8 +11,8 @@ import java.util.ArrayList;
  */
 public class Booking implements Serializable {
 
-    /** @see BackendCode.Person#serialVersionUID */
-    private static final long serialVersionUID = 1L;
+    /** @see Person#serialVersionUID */
+    private static final long serialVersionUID = 6454849438621591085L;
 
     private static final long ONE_HOUR_IN_MS = 1000L * 60 * 60;
 
@@ -83,86 +78,28 @@ public class Booking implements Serializable {
     }
 
     /**
-     * Rewrites Booking.ser from the given list.
-     *
-     * @return false if the data did not reach the file, so that callers can tell the
-     *         user instead of reporting a success that did not happen
-     */
-    private static boolean writeAll(ArrayList<Booking> booking) {
-        ObjectOutputStream outputStream = null;
-        boolean written = false;
-        try {
-            outputStream = new ObjectOutputStream(new FileOutputStream("Booking.ser"));
-            for (int i = 0; i < booking.size(); i++) {
-                outputStream.writeObject(booking.get(i));
-            }
-            written = true;
-        } catch (FileNotFoundException ex) {
-            System.out.println(ex);
-        } catch (IOException ex) {
-            System.out.println(ex);
-        } finally {
-            if (outputStream != null) {
-                try {
-                    outputStream.close();
-                } catch (IOException ex) {
-//                    the stream buffers, so a failed close can mean unflushed records
-                    System.out.println(ex);
-                    written = false;
-                }
-            }
-        }
-        return written;
-    }
-
-    /**
-     * @return true if the record reached the file
+     * @return true if the row was written
      */
     public boolean Add() {
-        ArrayList<Booking> booking = Booking.View();
-        // Auto ID ... one past the highest ID ever issued, so that removing the
-        // newest record does not hand its ID to the next one added.
-        int highestID = 0;
-        for (int i = 0; i < booking.size(); i++) {
-            if (booking.get(i).ID > highestID) {
-                highestID = booking.get(i).ID;
-            }
-        }
-        this.ID = IDGenerator.next("Booking.id", highestID);
         this.ReturnTime = 0;
-        booking.add(this);
-        return writeAll(booking);
+        return BookingDao.insert(this);
     }
 
     /**
-     * @return true if the record reached the file
+     * @return true if the row was updated
      */
     public boolean Update() {
-        ArrayList<Booking> booking = Booking.View();
-
-        // for loop for replacing the new Booking object with old one with same ID
-        for (int i = 0; i < booking.size(); i++) {
-            if (booking.get(i).ID == ID) {
-                booking.set(i, this);
-            }
-        }
-        return writeAll(booking);
+        return BookingDao.update(this);
     }
 
     /**
-     * @return true if the record was removed from the file
+     * Deletes this booking. Unlike the routine this replaces, an id that is not
+     * there is simply a no-op and does not take another record with it.
+     *
+     * @return true if the delete ran
      */
     public boolean Remove() {
-
-        ArrayList<Booking> booking = Booking.View();
-        // for loop for deleting the required Booking
-        for (int i = 0; i < booking.size(); i++) {
-            if ((booking.get(i).ID == ID)) {
-                booking.remove(i);
-                i--; // the next record has shifted down into this index
-            }
-        }
-        return writeAll(booking);
+        return BookingDao.delete(ID);
     }
 
     /**
@@ -190,140 +127,32 @@ public class Booking implements Serializable {
     }
 
     public static ArrayList<Booking> SearchByCustomerID(int CustomerID) {
-        ArrayList<Booking> bookingList = new ArrayList<>(0);
-        ArrayList<Booking> booking = Booking.View();
-        for (int i = 0; i < booking.size(); i++) {
-            if (booking.get(i).customer != null && booking.get(i).customer.getID() == CustomerID) {
-                bookingList.add(booking.get(i));
-            }
-        }
-        return bookingList;
+        return BookingDao.findByCustomer(CustomerID);
     }
 
     public static ArrayList<Booking> SearchByCarRegNo(String CarRegNo) {
-        ArrayList<Booking> bookingList = new ArrayList<>(0);
-        ArrayList<Booking> booking = Booking.View();
-        for (int i = 0; i < booking.size(); i++) {
-            if (booking.get(i).car != null && booking.get(i).car.getRegNo().equalsIgnoreCase(CarRegNo)) {
-                bookingList.add(booking.get(i));
-            }
-        }
-        return bookingList;
+        return BookingDao.findByCarRegNo(CarRegNo);
     }
 
     public static ArrayList<Booking> SearchByCarID(int carID) {
-        ArrayList<Booking> bookingList = new ArrayList<>(0);
-        ArrayList<Booking> booking = Booking.View();
-        for (int i = 0; i < booking.size(); i++) {
-            if (booking.get(i).car != null && booking.get(i).car.getID() == carID) {
-                bookingList.add(booking.get(i));
-            }
-        }
-        return bookingList;
+        return BookingDao.findByCar(carID);
     }
 
     public static ArrayList<Booking> View() {
-        ArrayList<Booking> bookingList = new ArrayList<>(0);
-        ObjectInputStream inputStream = null;
-        try {
-// open file for reading
-            inputStream = new ObjectInputStream(new FileInputStream("Booking.ser"));
-            boolean EOF = false;
-// Keep reading file until file ends
-            while (!EOF) {
-                try {
-                    Booking myObj = (Booking) inputStream.readObject();
-                    bookingList.add(myObj);
-                } catch (ClassNotFoundException e) {
-                    System.out.println(e);
-                } catch (EOFException end) {
-                    EOF = true;
-                }
-            }
-        } catch (FileNotFoundException e) {
-            System.out.println(e);
-        } catch (IOException e) {
-            System.out.println(e);
-        } finally {
-            try {
-                if (inputStream != null) {
-                    inputStream.close();
-                }
-            } catch (IOException e) {
-                System.out.println(e);
-            }
-        }
-        refreshReferences(bookingList);
-        return bookingList;
+        return BookingDao.findAll();
     }
 
     /**
-     * Every Booking in Booking.ser carries its own serialized copies of the Customer
-     * and the Car, taken when the Booking was saved. Once those records are edited
-     * through Customer_Update / Car_Update, the embedded copies are out of date --
-     * and their Bill / Balance fields are stale enough to corrupt money if written
-     * back. This swaps each embedded copy for the current record from its own file,
-     * matched on ID. A record that no longer exists keeps its embedded copy, so
-     * bookings for a deleted car still read as history.
-     *
-     * @param bookings the freshly deserialized bookings, updated in place
+     * @return the cars that are currently out
      */
-    private static void refreshReferences(ArrayList<Booking> bookings) {
-        if (bookings.isEmpty()) {
-            return;
-        }
-        ArrayList<Customer> customers = Customer.View();
-        ArrayList<Car> cars = Car.View();
-        for (int i = 0; i < bookings.size(); i++) {
-            Booking booking = bookings.get(i);
-            if (booking.customer != null) {
-                for (int j = 0; j < customers.size(); j++) {
-                    if (customers.get(j).getID() == booking.customer.getID()) {
-                        booking.customer = customers.get(j);
-                        break;
-                    }
-                }
-            }
-            if (booking.car != null) {
-                for (int j = 0; j < cars.size(); j++) {
-                    if (cars.get(j).getID() == booking.car.getID()) {
-                        booking.car = cars.get(j);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
     public static ArrayList<Car> getBookedCars() {
-        ArrayList<Car> bookedCars = new ArrayList<>();
-        ArrayList<Booking> bookings = Booking.View();
-        for (int i = 0; i < bookings.size(); i++) {
-            if (bookings.get(i).ReturnTime == 0) {
-                bookedCars.add(bookings.get(i).car);
-            }
-        }
-        return bookedCars;
+        return BookingDao.findBookedCars();
     }
 
+    /**
+     * @return the cars with no outstanding booking
+     */
     public static ArrayList<Car> getUnbookedCars() {
-        ArrayList<Car> allCars = Car.View();
-        ArrayList<Car> bookedCars = Booking.getBookedCars();
-        ArrayList<Car> unbookedCars = new ArrayList<>();
-//        Car.View() and getBookedCars() read from two different files, so the same
-//        car is two different objects. They have to be matched on ID, not on identity.
-        for (int i = 0; i < allCars.size(); i++) {
-            boolean isBooked = false;
-            for (int j = 0; j < bookedCars.size(); j++) {
-                if (allCars.get(i).getID() == bookedCars.get(j).getID()) {
-                    isBooked = true;
-                    break;
-                }
-            }
-            if (!isBooked) {
-                unbookedCars.add(allCars.get(i));
-            }
-        }
-        return unbookedCars;
+        return CarDao.findUnbooked();
     }
 }

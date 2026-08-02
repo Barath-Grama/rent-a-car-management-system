@@ -1,0 +1,135 @@
+package BackendCode.dao;
+
+import BackendCode.CarOwner;
+import BackendCode.Database;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+
+/**
+ * Reads and writes {@code car_owner} rows.
+ *
+ * @author @AbdullahShahid01
+ */
+public final class CarOwnerDao {
+
+    private CarOwnerDao() {
+    }
+
+    private static CarOwner read(ResultSet rows) throws SQLException {
+        return new CarOwner(rows.getInt("balance"), rows.getInt("id"),
+                rows.getString("cnic"), rows.getString("name"), rows.getString("contact_no"));
+    }
+
+    public static ArrayList<CarOwner> findAll() {
+        ArrayList<CarOwner> owners = new ArrayList<>();
+        String sql = "SELECT id, cnic, name, contact_no, balance FROM car_owner ORDER BY id";
+        try (PreparedStatement statement = Database.connection().prepareStatement(sql);
+             ResultSet rows = statement.executeQuery()) {
+            while (rows.next()) {
+                owners.add(read(rows));
+            }
+        } catch (SQLException ex) {
+            System.out.println(ex);
+        }
+        return owners;
+    }
+
+    public static CarOwner findById(int id) {
+        String sql = "SELECT id, cnic, name, contact_no, balance FROM car_owner WHERE id = ?";
+        try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
+            statement.setInt(1, id);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? read(rows) : null;
+            }
+        } catch (SQLException ex) {
+            System.out.println(ex);
+            return null;
+        }
+    }
+
+    public static CarOwner findByCnic(String cnic) {
+        String sql = "SELECT id, cnic, name, contact_no, balance FROM car_owner WHERE cnic = ? COLLATE NOCASE";
+        try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
+            statement.setString(1, cnic);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? read(rows) : null;
+            }
+        } catch (SQLException ex) {
+            System.out.println(ex);
+            return null;
+        }
+    }
+
+    public static ArrayList<CarOwner> findByName(String name) {
+        ArrayList<CarOwner> owners = new ArrayList<>();
+        String sql = "SELECT id, cnic, name, contact_no, balance FROM car_owner "
+                + "WHERE name = ? COLLATE NOCASE ORDER BY id";
+        try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
+            statement.setString(1, name);
+            try (ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    owners.add(read(rows));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println(ex);
+        }
+        return owners;
+    }
+
+    public static boolean insert(CarOwner owner) {
+        String sql = "INSERT INTO car_owner (cnic, name, contact_no, balance) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement statement = Database.connection()
+                .prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, owner.getCNIC());
+            statement.setString(2, owner.getName());
+            statement.setString(3, owner.getContact_No());
+            statement.setInt(4, owner.getBalance());
+            if (statement.executeUpdate() != 1) {
+                return false;
+            }
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next()) {
+                    owner.setID(keys.getInt(1));
+                }
+            }
+            return true;
+        } catch (SQLException ex) {
+            System.out.println(ex);
+            return false;
+        }
+    }
+
+    public static boolean update(CarOwner owner) {
+        String sql = "UPDATE car_owner SET cnic = ?, name = ?, contact_no = ?, balance = ? WHERE id = ?";
+        try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
+            statement.setString(1, owner.getCNIC());
+            statement.setString(2, owner.getName());
+            statement.setString(3, owner.getContact_No());
+            statement.setInt(4, owner.getBalance());
+            statement.setInt(5, owner.getID());
+            return statement.executeUpdate() == 1;
+        } catch (SQLException ex) {
+            System.out.println(ex);
+            return false;
+        }
+    }
+
+    /**
+     * Deletes the owner. Their cars cascade away, and each car's bookings with them,
+     * which is what CarOwner_Remove used to do by looping over cars by hand.
+     */
+    public static boolean delete(int id) {
+        try (PreparedStatement statement = Database.connection()
+                .prepareStatement("DELETE FROM car_owner WHERE id = ?")) {
+            statement.setInt(1, id);
+            return statement.executeUpdate() == 1;
+        } catch (SQLException ex) {
+            System.out.println(ex);
+            return false;
+        }
+    }
+}

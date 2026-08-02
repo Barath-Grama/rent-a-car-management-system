@@ -1,10 +1,8 @@
 package GUI;
 
-import BackendCode.Booking;
 import BackendCode.Customer;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
 import javax.swing.*;
 import org.netbeans.lib.awtextra.AbsoluteConstraints;
 import org.netbeans.lib.awtextra.AbsoluteLayout;
@@ -69,16 +67,10 @@ public class Customer_Remove {
                                     + customer.toString() + " \nAll the data including Booked Cars and Balance for this Customer will also be deleted  !"
                                     + "\n Are you sure you want to continue ??", "Remove Customer", JOptionPane.OK_CANCEL_OPTION);
                             if (showConfirmDialog == 0) {
-                                // Deleting all the booking records of customer
-                                ArrayList<Booking> bookings = Booking.View();
-                                for (int i = 0; i < bookings.size(); i++) {
-                                    if (customer.getID() == bookings.get(i).getCustomer().getID()) {
-                                        if (!SaveReport.check(bookings.get(i).Remove())) {
-                                            return;
-                                        }
-                                    }
-                                }
-                                // ** Delete all cars for this Customer **
+//                                The customer's bookings go with them: the foreign key
+//                                cascades, in one atomic step. This used to be a loop
+//                                over a stale snapshot calling a remove routine that
+//                                could destroy records it was never asked to touch.
                                 if (!SaveReport.check(customer.Remove())) {
                                     return;
                                 }

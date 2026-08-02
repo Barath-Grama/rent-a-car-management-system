@@ -9,12 +9,16 @@ import java.io.Serializable;
 public abstract class Person implements Serializable {
 
     /**
-     * Pinned so that the records already written to the .ser files keep loading
-     * after this class is edited. Without it the JVM derives an ID from the field
-     * and method signatures, and any change to those makes every stored record
-     * fail to read back with an InvalidClassException.
+     * The value the original class computed, read out of the .ser files that ship
+     * with the project.
+     * <p>
+     * Records now live in SQLite; the only thing that still deserializes is
+     * {@link SerImporter}, which carries that legacy data over on first run. It can
+     * only read those files if the class still claims the identity they were written
+     * with, so this must not be changed to a tidier number. An earlier pass set it to
+     * 1L and silently made every committed record unreadable.
      */
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -2820856493986088680L;
 
     protected int ID;
     protected String CNIC, Name, Contact_No;

@@ -1,23 +1,25 @@
 package BackendCode;
 
-import java.io.EOFException;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import BackendCode.dao.CustomerDao;
 import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
+ * A person who rents cars.
+ * <p>
+ * Persistence lives in {@link CustomerDao}; the methods here keep the names the
+ * screens already call, so the user interface did not have to change when the flat
+ * files were replaced by a database.
+ * <p>
+ * Still {@link Serializable} only so {@link SerImporter} can read the legacy
+ * {@code .ser} files. See {@link Person#serialVersionUID} before touching that field.
  *
  * @author @AbdullahShahid01
  */
 public class Customer extends Person implements Serializable {
 
     /** @see Person#serialVersionUID */
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -5667876069786539052L;
 
     private int Bill; // increases after every HOUR when a customers has Booked car(s)
 
@@ -44,147 +46,46 @@ public class Customer extends Person implements Serializable {
     }
 
     /**
-     * Rewrites Customer.ser from the given list.
+     * Inserts this customer and takes the id the database assigns.
      *
-     * @return false if the data did not reach the file, so that callers can tell the
-     *         user instead of reporting a success that did not happen
+     * @return true if the row was written
      */
-    private static boolean writeAll(ArrayList<Customer> customers) {
-        ObjectOutputStream outputStream = null;
-        boolean written = false;
-        try {
-            outputStream = new ObjectOutputStream(new FileOutputStream("Customer.ser"));
-            for (int i = 0; i < customers.size(); i++) {
-                outputStream.writeObject(customers.get(i));
-            }
-            written = true;
-        } catch (FileNotFoundException ex) {
-            System.out.println(ex);
-        } catch (IOException ex) {
-            System.out.println(ex);
-        } finally {
-            if (outputStream != null) {
-                try {
-                    outputStream.close();
-                } catch (IOException ex) {
-//                    the stream buffers, so a failed close can mean unflushed records
-                    System.out.println(ex);
-                    written = false;
-                }
-            }
-        }
-        return written;
-    }
-
     @Override
     public boolean Add() {
-        ArrayList<Customer> customers = Customer.View();
-        // Auto ID... one past the highest ID ever issued, so that removing the
-        // newest record does not hand its ID to the next one added.
-        int highestID = 0;
-        for (int i = 0; i < customers.size(); i++) {
-            if (customers.get(i).ID > highestID) {
-                highestID = customers.get(i).ID;
-            }
-        }
-        this.ID = IDGenerator.next("Customer.id", highestID);
-        customers.add(this);
-        return writeAll(customers);
+        return CustomerDao.insert(this);
     }
 
+    /**
+     * @return true if the row was updated
+     */
     @Override
     public boolean Update() {
-        ArrayList<Customer> customers = Customer.View();
-
-        // for loop for replacing the new Customer object with old one with same ID
-        for (int i = 0; i < customers.size(); i++) {
-            if (customers.get(i).ID == ID) {
-                customers.set(i, this);
-            }
-        }
-        return writeAll(customers);
+        return CustomerDao.update(this);
     }
 
-    ////////////////////////
+    /**
+     * Deletes this customer. Their bookings go with them, by cascade.
+     *
+     * @return true if the row was removed
+     */
     @Override
     public boolean Remove() {
-
-        ArrayList<Customer> customers = Customer.View();
-
-        // for loop for deleting the required Customer
-        for (int i = 0; i < customers.size(); i++) {
-            if (customers.get(i).ID == ID) {
-                customers.remove(i);
-                i--; // the next record has shifted down into this index
-            }
-        }
-        return writeAll(customers);
+        return CustomerDao.delete(ID);
     }
 
     public static ArrayList<Customer> SearchByName(String name) {
-        ArrayList<Customer> customers = Customer.View();
-        ArrayList<Customer> s = new ArrayList<>();
-
-        for (int i = 0; i < customers.size(); i++) {
-            if (customers.get(i).Name.equalsIgnoreCase(name)) {
-                s.add(customers.get(i));
-            }
-        }
-        return s;
+        return CustomerDao.findByName(name);
     }
 
     public static Customer SearchByCNIC(String CustomerCNIC) {
-        ArrayList<Customer> customers = Customer.View();
-        for (int i = 0; i < customers.size(); i++) {
-            if (customers.get(i).CNIC.equalsIgnoreCase(CustomerCNIC)) {
-                return customers.get(i);
-            }
-        }
-        return null;
+        return CustomerDao.findByCnic(CustomerCNIC);
     }
 
     public static Customer SearchByID(int id) {
-        ArrayList<Customer> customers = Customer.View();
-        for (int i = 0; i < customers.size(); i++) {
-            if (customers.get(i).ID == id) {
-                return customers.get(i);
-            }
-        }
-        return null;
+        return CustomerDao.findById(id);
     }
 
     public static ArrayList<Customer> View() {
-        ArrayList<Customer> CustomerList = new ArrayList<>(0);
-        ObjectInputStream inputStream = null;
-        try {
-// open file for reading
-            inputStream = new ObjectInputStream(new FileInputStream("Customer.ser"));
-            boolean EOF = false;
-// Keep reading file until file ends
-            while (!EOF) {
-                try {
-                    Customer myObj = (Customer) inputStream.readObject();
-                    CustomerList.add(myObj);
-                } catch (ClassNotFoundException e) {
-                    System.out.println(e);
-                } catch (EOFException end) {
-                    EOF = true;
-                }
-            }
-        } catch (FileNotFoundException e) {
-            System.out.println(e);
-        } catch (IOException e) {
-            System.out.println(e);
-        } finally {
-            try {
-                if (inputStream != null) {
-                    inputStream.close();
-                }
-            } catch (IOException e) {
-                System.out.println(e);
-            }
-        }
-        return CustomerList;
+        return CustomerDao.findAll();
     }
-
 }

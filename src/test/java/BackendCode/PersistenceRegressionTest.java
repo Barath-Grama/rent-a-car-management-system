@@ -146,17 +146,6 @@ class PersistenceRegressionTest {
     }
 
     @Test
-    @DisplayName("the id counter reseeds from existing records when its file is missing")
-    void idCounterReseedsFromExistingRecords() {
-        new Customer(0, 0, "1111111111111", "A", "03001111111").Add();
-        new java.io.File("Customer.id").delete();   // an install predating the counter
-
-        new Customer(0, 0, "2222222222222", "B", "03002222222").Add();
-
-        assertEquals(2, Customer.SearchByCNIC("2222222222222").getID());
-    }
-
-    @Test
     @DisplayName("renaming a customer shows through in the bookings that reference them")
     void renamingCustomerShowsThroughInBookings() {
         seed(1, 100);

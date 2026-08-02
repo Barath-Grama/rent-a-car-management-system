@@ -158,7 +158,7 @@ layout manager, and the whole test suite.
 
 ---
 
-## Credits
+## Credits and licence
 
 Built on the original Rent-A-Car Management System by **Abdullah Shahid**
 ([@AbdullahShahid01](https://github.com/AbdullahShahid01)), with a contribution from
@@ -166,4 +166,8 @@ Built on the original Rent-A-Car Management System by **Abdullah Shahid**
 this repository's history, and the files they wrote keep their `@author` tags; the
 files listed above as written during the rebuild carry mine.
 
-The original project carried no licence file.
+The rebuild is [MIT licensed](LICENSE). That grant covers the files tagged
+`@author @Barath-Grama` plus the documentation, build and tests — it does **not** cover
+the 14 inherited files. The original project was published without a licence, so
+copyright in those remains with its authors and none is granted here. If you want to
+reuse the project as a whole, please approach the original author.

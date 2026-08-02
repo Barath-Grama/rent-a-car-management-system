@@ -1,0 +1,61 @@
+MIT License
+
+Copyright (c) 2026 Barath Grama
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+================================================================================
+SCOPE AND PROVENANCE
+================================================================================
+
+This repository contains work by more than one author, and the licence above
+does not cover all of it.
+
+The MIT licence above applies to the files written during the rebuild of this
+project. In the source tree these carry the tag:
+
+    @author @Barath-Grama
+
+At the time of writing that is 18 files: the persistence layer (Database, the
+five DAOs, the schema and its migration), the service layer (RentalService,
+UserService, ServiceResult), reporting and the dashboard (ReportingDao,
+Dashboard, BarChart), the table tooling (TableTools), the legacy importer
+(SerImporter), the AppUser model, the Images and SaveReport helpers, the
+vendored absolute-layout classes, and the whole test suite. It also covers
+README.md, ENGINEERING.md, the build configuration and the screenshots in docs/.
+
+The remaining 14 source files originate from the Rent-A-Car Management System by
+Abdullah Shahid (https://github.com/AbdullahShahid01/Rent-a-Car-Management-System),
+with a contribution from Saad Bin Abi Waqas. In the source tree these carry:
+
+    @author @AbdullahShahid01
+
+That project was published without a licence. Copyright in those files therefore
+remains with their authors, and no licence for them is granted here. They have
+been modified in this repository, and those modifications do not change who holds
+copyright in the underlying work.
+
+What this means in practice: the MIT grant above is the only permission this
+repository can offer, and it does not extend to the inherited files. Anyone
+wanting to reuse the project as a whole should approach the original author.
+
+The image assets (LoginImage.JPG, MainMenuImage.jpeg, WelcomeImage.jpg) came with
+the original project and have no stated source or licence. They are excluded from
+the grant above.

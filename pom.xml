@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.rentacar</groupId>
+    <artifactId>rent-a-car-management-system</artifactId>
+    <version>2.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>Rent-A-Car Management System</name>
+    <description>
+        Java Swing desktop application for managing a car rental business: cars, owners,
+        customers and bookings. Originally a semester OOP project; rebuilt with a tested,
+        self-contained build.
+    </description>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <main.class>GUI.Runner</main.class>
+
+        <junit.version>5.11.3</junit.version>
+        <surefire.version>3.5.2</surefire.version>
+        <shade.version>3.6.0</shade.version>
+        <!-- 0.8.12 cannot instrument class file major version 68 (JDK 24). -->
+        <jacoco.version>0.8.13</jacoco.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>rent-a-car</finalName>
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <compilerArgs>
+                        <arg>-Xlint:all</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.version}</version>
+                <configuration>
+                    <!-- No display in CI, and nothing under test touches a window peer. -->
+                    <argLine>@{argLine} -Djava.awt.headless=true</argLine>
+                    <!--
+                        The model writes its .ser files to the current working directory.
+                        Without this the suite would overwrite the repository's own data
+                        files every run, so tests get a scratch directory of their own.
+                    -->
+                    <workingDirectory>${project.build.directory}/test-workdir</workingDirectory>
+                </configuration>
+            </plugin>
+
+            <!-- Produces target/rent-a-car.jar, runnable with `java -jar`. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${shade.version}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>${main.class}</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <configuration>
+                    <!--
+                        The Swing screens are deliberately not unit-tested; driving them
+                        would need AssertJ-Swing and would buy very little. They are
+                        roughly 2800 of the 3500 lines here, so counting them would
+                        report a number that says "we chose not to test the UI" while
+                        looking like "the logic is untested". Coverage is therefore
+                        measured on the model and the layout manager, which is what the
+                        suite actually exercises. GUI/Images is covered but not counted.
+                    -->
+                    <excludes>
+                        <exclude>GUI/**</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

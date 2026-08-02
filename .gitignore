@@ -1,0 +1,21 @@
+# Maven
+target/
+
+# Ant output from the old NetBeans build, kept out in case anyone still has one
+build/
+
+# Runtime data written next to the program, not source
+*.id
+credentials.properties
+
+# IDE
+.idea/
+*.iml
+nbproject/private/
+.settings/
+.classpath
+.project
+
+# OS
+Thumbs.db
+.DS_Store

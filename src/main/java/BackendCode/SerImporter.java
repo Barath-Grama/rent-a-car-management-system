@@ -12,8 +12,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,11 +66,23 @@ public final class SerImporter {
             try {
                 insertOwners(connection, owners);
                 insertCustomers(connection, customers);
-                insertCars(connection, cars, owners);
-                insertBookings(connection, bookings);
+//                Each step reports the ids it actually wrote, and the next one only
+//                references those. A record the previous step had to drop would
+//                otherwise fail a foreign key and take the whole import down with it.
+                Set<Integer> ownerIds = idsOf(owners);
+                Set<Integer> customerIds = idsOf(customers);
+                Set<Integer> carIds = insertCars(connection, cars, ownerIds);
+                int bookingsWritten = insertBookings(connection, bookings, customerIds, carIds);
                 connection.commit();
+//                report what was written, not what was read: anything dropped for a
+//                missing reference has already been logged as a warning
                 LOG.info("imported legacy records: {} owners, {} customers, {} cars, {} bookings",
-                        owners.size(), customers.size(), cars.size(), bookings.size());
+                        owners.size(), customers.size(), carIds.size(), bookingsWritten);
+                int dropped = (cars.size() - carIds.size()) + (bookings.size() - bookingsWritten);
+                if (dropped > 0) {
+                    LOG.warn("{} legacy record(s) were dropped because what they referred to "
+                            + "no longer exists; see the warnings above", dropped);
+                }
             } catch (SQLException ex) {
                 connection.rollback();
                 LOG.error("legacy import rolled back", ex);
@@ -157,12 +169,12 @@ public final class SerImporter {
         }
     }
 
-    private static void insertCars(Connection connection, ArrayList<Car> cars,
-                                   ArrayList<CarOwner> owners) throws SQLException {
-        Map<Integer, Boolean> knownOwners = new HashMap<>();
-        for (CarOwner owner : owners) {
-            knownOwners.put(owner.getID(), Boolean.TRUE);
-        }
+    /**
+     * @return the ids of the cars actually written, so bookings can be filtered to them
+     */
+    private static Set<Integer> insertCars(Connection connection, ArrayList<Car> cars,
+                                           Set<Integer> ownerIds) throws SQLException {
+        Set<Integer> written = new HashSet<>();
         String sql = "INSERT INTO car (id, maker, name, colour, type, seating_capacity, model, "
                 + "condition, reg_no, rent_per_hour, owner_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -170,10 +182,11 @@ public final class SerImporter {
                 CarOwner owner = car.getCarOwner();
 //                the embedded owner copy could point at an owner that had since been
 //                deleted; such a car cannot satisfy the foreign key, so it is skipped
-                if (owner == null || !knownOwners.containsKey(owner.getID())) {
-                    LOG.warn("skipping car " + car.getID() + ": its owner no longer exists");
+                if (owner == null || !ownerIds.contains(owner.getID())) {
+                    LOG.warn("skipping car {}: its owner no longer exists", car.getID());
                     continue;
                 }
+                written.add(car.getID());
                 statement.setInt(1, car.getID());
                 statement.setString(2, car.getMaker());
                 statement.setString(3, car.getName());
@@ -189,15 +202,45 @@ public final class SerImporter {
             }
             statement.executeBatch();
         }
+        return written;
     }
 
-    private static void insertBookings(Connection connection, ArrayList<Booking> bookings) throws SQLException {
+    /** @return the ids present in the given records */
+    private static Set<Integer> idsOf(ArrayList<? extends Person> people) {
+        Set<Integer> ids = new HashSet<>();
+        for (Person person : people) {
+            ids.add(person.getID());
+        }
+        return ids;
+    }
+
+    /**
+     * @return how many bookings were actually written
+     */
+    private static int insertBookings(Connection connection, ArrayList<Booking> bookings,
+                                      Set<Integer> customerIds, Set<Integer> carIds) throws SQLException {
+        int written = 0;
         String sql = "INSERT INTO booking (id, customer_id, car_id, rent_time, return_time, amount_charged) "
                 + "VALUES (?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (Booking booking : bookings) {
                 if (booking.getCustomer() == null || booking.getCar() == null) {
-                    LOG.warn("skipping booking " + booking.getID() + ": incomplete record");
+                    LOG.warn("skipping booking {}: incomplete record", booking.getID());
+                    continue;
+                }
+//                The original program deleted records without checking what referred
+//                to them, so a booking can easily outlive its car or its customer.
+//                Such a row cannot satisfy the foreign key, and letting it reach the
+//                database would fail the batch and roll the whole import back --
+//                losing every other record for the sake of one orphan.
+                if (!customerIds.contains(booking.getCustomer().getID())) {
+                    LOG.warn("skipping booking {}: customer {} no longer exists",
+                            booking.getID(), booking.getCustomer().getID());
+                    continue;
+                }
+                if (!carIds.contains(booking.getCar().getID())) {
+                    LOG.warn("skipping booking {}: car {} was not imported",
+                            booking.getID(), booking.getCar().getID());
                     continue;
                 }
                 statement.setInt(1, booking.getID());
@@ -215,9 +258,11 @@ public final class SerImporter {
 //                    imported rentals would otherwise report no revenue at all.
                     statement.setInt(6, booking.calculateBill());
                 }
+                written++;
                 statement.addBatch();
             }
             statement.executeBatch();
         }
+        return written;
     }
 }

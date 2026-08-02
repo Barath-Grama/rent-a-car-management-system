@@ -33,6 +33,12 @@ public final class UserService {
     /** Cost 10 is roughly 100ms per check here: unnoticeable to a person, expensive in bulk. */
     private static final int COST = 10;
 
+    /**
+     * Verified against when the username is not on record, so that path costs the same
+     * as a real check. Computed once at class load rather than per attempt.
+     */
+    private static final String DECOY_HASH = BCrypt.hashpw("decoy", BCrypt.gensalt(COST));
+
     private static AppUser signedIn;
 
     private UserService() {
@@ -52,9 +58,12 @@ public final class UserService {
             statement.setString(1, username == null ? "" : username.trim());
             try (ResultSet rows = statement.executeQuery()) {
                 if (!rows.next()) {
-//                    still run a hash so a wrong username does not answer faster than
-//                    a wrong password, which would let someone enumerate accounts
-                    BCrypt.checkpw(new String(password), BCrypt.hashpw("x", BCrypt.gensalt(COST)));
+//                    Check against a fixed decoy hash so an unknown username costs the
+//                    same one BCrypt verification as a known one, and cannot be picked
+//                    out by how quickly it is rejected. Generating a salt and hashing
+//                    here instead would be two operations, making an unknown username
+//                    measurably *slower* -- the same leak, inverted.
+                    BCrypt.checkpw(new String(password), DECOY_HASH);
                     return null;
                 }
                 if (!BCrypt.checkpw(new String(password), rows.getString("password_hash"))) {
@@ -95,19 +104,24 @@ public final class UserService {
      * @return what happened, with a message for the user
      */
     public static ServiceResult addUser(String username, char[] password, AppUser.Role role) {
-        if (username == null || username.trim().isEmpty()) {
-            return ServiceResult.failed("Enter a username.");
-        }
         if (password == null || password.length < 3) {
             return ServiceResult.failed("The password must be at least 3 characters.");
         }
+//        Past this point every exit wipes the password, including the rejected ones.
+//        The username check sits inside the try so an invalid name cannot leave the
+//        characters sitting in memory.
         String sql = "INSERT INTO app_user (username, password_hash, role) VALUES (?, ?, ?)";
-        try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
-            statement.setString(1, username.trim());
-            statement.setString(2, BCrypt.hashpw(new String(password), BCrypt.gensalt(COST)));
-            statement.setString(3, role.name());
-            statement.executeUpdate();
-            return ServiceResult.ok("User " + username.trim() + " added.");
+        try {
+            if (username == null || username.trim().isEmpty()) {
+                return ServiceResult.failed("Enter a username.");
+            }
+            try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
+                statement.setString(1, username.trim());
+                statement.setString(2, BCrypt.hashpw(new String(password), BCrypt.gensalt(COST)));
+                statement.setString(3, role.name());
+                statement.executeUpdate();
+                return ServiceResult.ok("User " + username.trim() + " added.");
+            }
         } catch (SQLException ex) {
             LOG.error("could not add the user", ex);
             return ServiceResult.failed("That username is already taken.");

@@ -34,6 +34,8 @@ public final class Database {
 
     private static Connection connection;
     private static String fileName = DEFAULT_FILE;
+    /** True while {@link #inTransaction} is running, so a nested call can be refused. */
+    private static boolean running;
 
     private Database() {
     }
@@ -181,10 +183,21 @@ public final class Database {
         try {
             target = connection();
         } catch (SQLException ex) {
-            LOG.error("transaction failed and was rolled back", ex);
+            LOG.error("could not open the database for a transaction", ex);
+            return false;
+        }
+//        SQLite has no nested transactions, and this method is reentrant on a single
+//        thread. An inner call would commit or roll back the outer one's work when it
+//        finished, which surfaces later as inexplicably missing data. Nothing needs
+//        nesting today; refusing it turns a silent corruption into a loud failure if
+//        anything ever tries.
+        if (running) {
+            LOG.error("a transaction is already running on this connection; "
+                    + "nesting would commit the outer one early");
             return false;
         }
         boolean previousAutoCommit = true;
+        running = true;
         try {
             previousAutoCommit = target.getAutoCommit();
             target.setAutoCommit(false);
@@ -199,14 +212,15 @@ public final class Database {
             try {
                 target.rollback();
             } catch (SQLException rollbackFailure) {
-                LOG.error("transaction failed and was rolled back", rollbackFailure);
+                LOG.error("the rollback itself failed", rollbackFailure);
             }
             return false;
         } finally {
+            running = false;
             try {
                 target.setAutoCommit(previousAutoCommit);
             } catch (SQLException ex) {
-                LOG.error("transaction failed and was rolled back", ex);
+                LOG.error("could not restore auto-commit after the transaction", ex);
             }
         }
     }

@@ -15,14 +15,12 @@ import org.netbeans.lib.awtextra.AbsoluteLayout;
 
 public final class CarOwner_Details implements ActionListener {
 
-    private JTextField SearchID_TextField;
-    private JButton SearchID_Button, SearchName_Button, Update_Button, Add_Button, Remove_Button, Back_Button, Logout_Button, ClearBalance_Button;
+    private JButton Update_Button, Add_Button, Remove_Button, Back_Button, Logout_Button, ClearBalance_Button;
     private JScrollPane jScrollPane1;
     private JTable jTable1;
     private JTextField Filter_TextField;
     private JLabel Filter_Label;
     private JButton ExportCsv_Button;
-    private JTextField SearchName_TextField;
     private DefaultTableModel tablemodel;
     private JPanel MainPanel;
 

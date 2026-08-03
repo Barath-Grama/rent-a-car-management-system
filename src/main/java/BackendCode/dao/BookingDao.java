@@ -33,7 +33,8 @@ public final class BookingDao {
     private static final Logger LOG = LoggerFactory.getLogger(BookingDao.class);
 
     private static final String SELECT =
-            "SELECT b.id, b.rent_time, b.return_time, b.amount_charged, b.customer_id, b.car_id FROM booking b ";
+            "SELECT b.id, b.starts_at, b.ends_at, b.rent_time, b.return_time, "
+          + "b.amount_charged, b.customer_id, b.car_id FROM booking b ";
 
     private BookingDao() {
     }
@@ -48,7 +49,10 @@ public final class BookingDao {
 //        have been retired. This is the whole point of retiring rather than erasing.
         Customer customer = CustomerDao.findByIdIncludingRetired(rows.getInt("customer_id"));
         Car car = CarDao.findByIdIncludingRetired(rows.getInt("car_id"));
-        Booking booking = new Booking(rows.getInt("id"), customer, car, rows.getLong("rent_time"), returnTime);
+        long rentTime = rows.getLong("rent_time");
+        Long collected = rows.wasNull() ? null : rentTime;
+        Booking booking = new Booking(rows.getInt("id"), customer, car,
+                rows.getLong("starts_at"), rows.getLong("ends_at"), collected, returnTime);
         int charged = rows.getInt("amount_charged");
         booking.setAmountCharged(rows.wasNull() ? null : charged);
         return booking;
@@ -94,11 +98,33 @@ public final class BookingDao {
     }
 
     /**
+     * Bookings for a car whose window overlaps the given one and which have not been
+     * closed. Touching at an endpoint does not count: a car due back at noon can go
+     * straight out again at noon.
+     *
+     * @return the bookings that would clash
+     */
+    public static ArrayList<Booking> findClashing(int carId, long startsAt, long endsAt) {
+        return query(SELECT + "WHERE b.car_id = ? AND b.return_time IS NULL "
+                + "AND b.starts_at < ? AND ? < b.ends_at ORDER BY b.starts_at",
+                carId, endsAt, startsAt);
+    }
+
+    /**
+     * @return reservations nobody has collected yet, soonest first
+     */
+    public static ArrayList<Booking> findAwaitingCollection() {
+        return query(SELECT + "WHERE b.rent_time IS NULL AND b.return_time IS NULL "
+                + "ORDER BY b.starts_at");
+    }
+
+    /**
      * @return the cars that are currently out
      */
     public static ArrayList<Car> findBookedCars() {
         ArrayList<Car> cars = new ArrayList<>();
-        String sql = "SELECT car_id FROM booking WHERE return_time IS NULL ORDER BY id";
+        String sql = "SELECT car_id FROM booking "
+                + "WHERE rent_time IS NOT NULL AND return_time IS NULL ORDER BY id";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql);
              ResultSet rows = statement.executeQuery()) {
             while (rows.next()) {
@@ -114,7 +140,8 @@ public final class BookingDao {
     }
 
     public static boolean insert(Booking booking) {
-        String sql = "INSERT INTO booking (customer_id, car_id, rent_time, return_time, amount_charged) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO booking (customer_id, car_id, starts_at, ends_at, rent_time, "
+                + "return_time, amount_charged) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = Database.connection()
                 .prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             bindFields(statement, booking);
@@ -134,10 +161,11 @@ public final class BookingDao {
     }
 
     public static boolean update(Booking booking) {
-        String sql = "UPDATE booking SET customer_id = ?, car_id = ?, rent_time = ?, return_time = ?, amount_charged = ? WHERE id = ?";
+        String sql = "UPDATE booking SET customer_id = ?, car_id = ?, starts_at = ?, ends_at = ?, "
+                + "rent_time = ?, return_time = ?, amount_charged = ? WHERE id = ?";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
             bindFields(statement, booking);
-            statement.setInt(6, booking.getID());
+            statement.setInt(8, booking.getID());
             return statement.executeUpdate() == 1;
         } catch (SQLException ex) {
             LOG.error("could not update a booking", ex);
@@ -148,17 +176,24 @@ public final class BookingDao {
     private static void bindFields(PreparedStatement statement, Booking booking) throws SQLException {
         statement.setInt(1, booking.getCustomer() == null ? 0 : booking.getCustomer().getID());
         statement.setInt(2, booking.getCar() == null ? 0 : booking.getCar().getID());
-        statement.setLong(3, booking.getRentTime());
-        if (booking.getReturnTime() == 0) {
-            statement.setNull(4, Types.INTEGER);
+        statement.setLong(3, booking.getStartsAt());
+        statement.setLong(4, booking.getEndsAt());
+        if (booking.getRentTime() == null) {
+//            a reservation nobody has collected yet
+            statement.setNull(5, Types.INTEGER);
         } else {
-            statement.setLong(4, booking.getReturnTime());
+            statement.setLong(5, booking.getRentTime());
+        }
+        if (booking.getReturnTime() == 0) {
+            statement.setNull(6, Types.INTEGER);
+        } else {
+            statement.setLong(6, booking.getReturnTime());
         }
         if (booking.getAmountCharged() == null) {
 //            nothing charged until the car is back
-            statement.setNull(5, Types.INTEGER);
+            statement.setNull(7, Types.INTEGER);
         } else {
-            statement.setInt(5, booking.getAmountCharged());
+            statement.setInt(7, booking.getAmountCharged());
         }
     }
 

@@ -9,7 +9,9 @@ import BackendCode.dao.BookingDao;
 import BackendCode.dao.CarDao;
 import BackendCode.dao.CarOwnerDao;
 import BackendCode.dao.CustomerDao;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 /**
  * The rules of renting a car out and taking it back.
@@ -27,6 +29,11 @@ import java.util.ArrayList;
  */
 public final class RentalService {
 
+    private static final long ONE_DAY = 24L * 60 * 60 * 1000;
+
+    /** How a booking window is written back to the user. */
+    private static final SimpleDateFormat WHEN = new SimpleDateFormat("dd-MM-yyyy hh:mm a");
+
     private RentalService() {
     }
 
@@ -38,6 +45,29 @@ public final class RentalService {
      * @return what happened, with a message for the user
      */
     public static ServiceResult bookCar(int carId, int customerId) {
+        long now = System.currentTimeMillis();
+        return reserve(carId, customerId, now, now + ONE_DAY, true);
+    }
+
+    /**
+     * Reserves a car for a window, without collecting it.
+     *
+     * @param carId      the car to hold
+     * @param customerId who it is held for
+     * @param startsAt   when the hold begins
+     * @param endsAt     when it ends
+     * @return what happened, with a message for the user
+     */
+    public static ServiceResult reserve(int carId, int customerId, long startsAt, long endsAt) {
+        return reserve(carId, customerId, startsAt, endsAt, false);
+    }
+
+    /**
+     * @param collectNow true for a walk-in taking the car straight away, false for a
+     *                   reservation somebody will come back for
+     */
+    private static ServiceResult reserve(int carId, int customerId, long startsAt, long endsAt,
+                                         boolean collectNow) {
         Car car = CarDao.findById(carId);
         if (car == null) {
             return ServiceResult.failed("Car ID does not exist !");
@@ -46,15 +76,50 @@ public final class RentalService {
         if (customer == null) {
             return ServiceResult.failed("Customer ID does not exist !");
         }
-        if (CarDao.isRented(carId)) {
-            return ServiceResult.failed("This car is already booked !");
+        if (endsAt <= startsAt) {
+            return ServiceResult.failed("The return date must be after the collection date.");
         }
 
-        Booking booking = new Booking(0, customer, car, System.currentTimeMillis(), 0);
+        ArrayList<Booking> clashes = BookingDao.findClashing(carId, startsAt, endsAt);
+        if (!clashes.isEmpty()) {
+            Booking first = clashes.get(0);
+            return ServiceResult.failed("This car is already spoken for between "
+                    + WHEN.format(new Date(first.getStartsAt())) + " and "
+                    + WHEN.format(new Date(first.getEndsAt())) + ".");
+        }
+
+        Booking booking = new Booking(0, customer, car, startsAt, endsAt,
+                collectNow ? Long.valueOf(startsAt) : null, 0);
         if (!booking.Add()) {
             return ServiceResult.failed("The booking could not be saved.");
         }
-        return ServiceResult.ok("Car Successfully Booked !");
+        return ServiceResult.ok(collectNow
+                ? "Car Successfully Booked !"
+                : "Car reserved from " + WHEN.format(new Date(startsAt))
+                  + " to " + WHEN.format(new Date(endsAt)) + " !");
+    }
+
+    /**
+     * Hands over a car somebody reserved earlier.
+     *
+     * @param bookingId the reservation being collected
+     * @return what happened, with a message for the user
+     */
+    public static ServiceResult collect(int bookingId) {
+        for (Booking booking : BookingDao.findAwaitingCollection()) {
+            if (booking.getID() != bookingId) {
+                continue;
+            }
+            if (CarDao.isRented(booking.getCar().getID())) {
+                return ServiceResult.failed("That car is still out with somebody else.");
+            }
+            booking.setRentTime(System.currentTimeMillis());
+            if (!booking.Update()) {
+                return ServiceResult.failed("The collection could not be saved.");
+            }
+            return ServiceResult.ok("Car collected !");
+        }
+        return ServiceResult.failed("No reservation is waiting to be collected under that ID.");
     }
 
     /**
@@ -116,7 +181,8 @@ public final class RentalService {
     public static Booking openBookingFor(int carId) {
         ArrayList<Booking> bookings = BookingDao.findByCar(carId);
         for (int i = bookings.size() - 1; i >= 0; i--) {
-            if (bookings.get(i).getReturnTime() == 0) {
+//            a reservation nobody has collected is not a car that can be brought back
+            if (bookings.get(i).isOut()) {
                 return bookings.get(i);
             }
         }

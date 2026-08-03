@@ -51,7 +51,14 @@ CREATE TABLE IF NOT EXISTS booking (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_id  INTEGER NOT NULL REFERENCES customer(id) ON DELETE CASCADE,
     car_id       INTEGER NOT NULL REFERENCES car(id)      ON DELETE CASCADE,
-    rent_time    INTEGER NOT NULL,
+    -- The window the car is spoken for. Separate from when it was actually collected
+    -- and brought back, because a reservation exists before either happens and the
+    -- overlap check has to work against the plan, not the event.
+    starts_at    INTEGER NOT NULL,
+    ends_at      INTEGER NOT NULL,
+    -- When the customer actually took the car. NULL for a reservation nobody has
+    -- collected yet.
+    rent_time    INTEGER,
     -- NULL while the car is still out. The old format used 0 as that sentinel, which
     -- is also a valid epoch millisecond and made "not returned" indistinguishable
     -- from "returned in 1970" in any query.
@@ -81,3 +88,5 @@ CREATE INDEX IF NOT EXISTS idx_booking_customer  ON booking(customer_id);
 CREATE INDEX IF NOT EXISTS idx_booking_car       ON booking(car_id);
 -- Every "is this car currently out?" check filters on this.
 CREATE INDEX IF NOT EXISTS idx_booking_open      ON booking(car_id) WHERE return_time IS NULL;
+-- The overlap check scans a car's reservations by window.
+CREATE INDEX IF NOT EXISTS idx_booking_window    ON booking(car_id, starts_at, ends_at);

@@ -136,7 +136,8 @@ public final class CarDao {
      * @return true if the car has a booking that has not been returned yet
      */
     public static boolean isRented(int carId) {
-        String sql = "SELECT 1 FROM booking WHERE car_id = ? AND return_time IS NULL LIMIT 1";
+        String sql = "SELECT 1 FROM booking WHERE car_id = ? "
+                + "AND rent_time IS NOT NULL AND return_time IS NULL LIMIT 1";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
             statement.setInt(1, carId);
             try (ResultSet rows = statement.executeQuery()) {
@@ -154,7 +155,8 @@ public final class CarDao {
     public static ArrayList<Car> findUnbooked() {
         ArrayList<Car> cars = new ArrayList<>();
         String sql = SELECT + "WHERE " + LIVE + " AND c.id NOT IN "
-                + "(SELECT car_id FROM booking WHERE return_time IS NULL) ORDER BY c.id";
+                + "(SELECT car_id FROM booking WHERE rent_time IS NOT NULL "
+                + " AND return_time IS NULL) ORDER BY c.id";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql);
              ResultSet rows = statement.executeQuery()) {
             while (rows.next()) {

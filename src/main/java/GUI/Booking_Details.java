@@ -58,7 +58,7 @@ public final class Booking_Details {
         Filter_TextField.setToolTipText("Narrows the table as you type. Click a column header to sort.");
         ExportCsv_Button = new JButton("Export CSV");
 
-        String[] columns = {"Sr#", "ID", "Customer ID+Name", "Car Name", "Rent Time", "Return Time"};
+        String[] columns = {"Sr#", "ID", "Customer ID+Name", "Car Name", "Booked From", "Booked To", "Status"};
         tablemodel = new DefaultTableModel(columns, 0) {
 
             @Override
@@ -86,19 +86,22 @@ public final class Booking_Details {
 //            hh, not HH: HH is the 24-hour clock, and pairing it with the am/pm
 //            marker rendered half the day as nonsense like "21:22 pm"
             SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm a dd-MM-yyyy");
-            Date rentime = new Date(Booking_objects.get(i).getRentTime());
+            Date rentime = new Date(Booking_objects.get(i).getStartsAt());
             String rentTime = dateFormat.format(rentime);
 
-            long returnTime_ = Booking_objects.get(i).getReturnTime();
-            String returnTime;
-            if (returnTime_ != 0) {
-                Date returntime = new Date(returnTime_);
-                returnTime = dateFormat.format(returntime);
+            String status;
+            if (Booking_objects.get(i).getReturnTime() != 0) {
+                status = "Returned " + dateFormat.format(new Date(Booking_objects.get(i).getReturnTime()));
+            } else if (Booking_objects.get(i).isOut()) {
+                status = "Out since " + dateFormat.format(new Date(Booking_objects.get(i).getRentTime()));
             } else {
-                returnTime = "Not returned yet !";
+                status = "Reserved, not collected";
             }
 
-            String[] one_s_Record = {((i + 1) + ""), "" + ID, customer_ID_Name, carID+": "+carName, rentTime, returnTime};
+            String bookedTo = dateFormat.format(new Date(Booking_objects.get(i).getEndsAt()));
+
+            String[] one_s_Record = {((i + 1) + ""), "" + ID, customer_ID_Name, carID+": "+carName,
+                rentTime, bookedTo, status};
             tablemodel.addRow(one_s_Record);
         }
 
@@ -111,6 +114,7 @@ public final class Booking_Details {
         jTable1.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
         jTable1.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
         jTable1.getColumnModel().getColumn(5).setCellRenderer(centerRenderer);
+        jTable1.getColumnModel().getColumn(6).setCellRenderer(centerRenderer);
 
         // adjusting size of each column
         jTable1.getColumnModel().getColumn(0).setMinWidth(80);
@@ -118,7 +122,8 @@ public final class Booking_Details {
         jTable1.getColumnModel().getColumn(2).setMinWidth(400);
         jTable1.getColumnModel().getColumn(3).setMinWidth(300);
         jTable1.getColumnModel().getColumn(4).setMinWidth(230);
-        jTable1.getColumnModel().getColumn(5).setMinWidth(235);
+        jTable1.getColumnModel().getColumn(5).setMinWidth(200);
+        jTable1.getColumnModel().getColumn(6).setMinWidth(230);
 
         jTable1.getTableHeader().setReorderingAllowed(false);
 

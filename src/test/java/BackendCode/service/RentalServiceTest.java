@@ -63,7 +63,8 @@ class RentalServiceTest {
         ServiceResult second = RentalService.bookCar(1, 1);
 
         assertFalse(second.isSuccess());
-        assertTrue(second.getMessage().contains("already booked"));
+        assertTrue(second.getMessage().contains("already spoken for"),
+                "the refusal should say when the clash is: " + second.getMessage());
         assertEquals(1, Booking.View().size(), "the refused booking must not have been written");
     }
 

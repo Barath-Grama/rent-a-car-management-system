@@ -91,6 +91,60 @@ public final class Database {
     private static void migrate(Connection target) throws SQLException {
         addAmountCharged(target);
         addDeletedFlags(target);
+        addReservationWindow(target);
+    }
+
+    /**
+     * Gives existing bookings the reservation window the schema now requires.
+     * <p>
+     * This one cannot be done with {@code ALTER TABLE ADD COLUMN}. The new columns are
+     * NOT NULL, which SQLite will not add without a default, and {@code rent_time} has
+     * to become nullable so a reservation nobody has collected yet can say so --
+     * changing a column's nullability means rebuilding the table. So the table is
+     * recreated, the old rows are copied across with a window derived from what they
+     * did record, and the original is dropped. All inside the caller's transaction, so
+     * a failure leaves the old table untouched.
+     */
+    private static void addReservationWindow(Connection target) throws SQLException {
+        if (hasColumn(target, "booking", "starts_at")) {
+            return;
+        }
+        LOG.info("migrating: rebuilding booking with a reservation window");
+        boolean autoCommit = target.getAutoCommit();
+        target.setAutoCommit(false);
+        try (Statement statement = target.createStatement()) {
+//            foreign keys have to be off while the old table is swapped out, or the
+//            drop is refused by the rows still pointing at it
+            statement.execute("PRAGMA foreign_keys = OFF");
+            statement.execute(
+                "CREATE TABLE booking_new ("
+              + "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
+              + "  customer_id INTEGER NOT NULL REFERENCES customer(id) ON DELETE CASCADE,"
+              + "  car_id INTEGER NOT NULL REFERENCES car(id) ON DELETE CASCADE,"
+              + "  starts_at INTEGER NOT NULL,"
+              + "  ends_at INTEGER NOT NULL,"
+              + "  rent_time INTEGER,"
+              + "  return_time INTEGER,"
+              + "  amount_charged INTEGER)");
+//            An existing booking was always an immediate rental, so its window is the
+//            time it was actually out. One still on loan has no end yet, so it is given
+//            a day, which is the shortest honest guess and is visibly a guess.
+            statement.executeUpdate(
+                "INSERT INTO booking_new (id, customer_id, car_id, starts_at, ends_at,"
+              + " rent_time, return_time, amount_charged) "
+              + "SELECT id, customer_id, car_id, rent_time,"
+              + "       COALESCE(return_time, rent_time + 86400000),"
+              + "       rent_time, return_time, amount_charged FROM booking");
+            statement.execute("DROP TABLE booking");
+            statement.execute("ALTER TABLE booking_new RENAME TO booking");
+            statement.execute("PRAGMA foreign_keys = ON");
+            target.commit();
+        } catch (SQLException ex) {
+            target.rollback();
+            throw ex;
+        } finally {
+            target.setAutoCommit(autoCommit);
+        }
     }
 
     /**

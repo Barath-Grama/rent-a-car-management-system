@@ -19,7 +19,31 @@ public class Booking implements Serializable {
     private int ID;
     private Customer customer;
     private Car car;
-    private long RentTime, ReturnTime; // stores System time when the Book() method is called
+    /** The window the car is spoken for: set when the booking is made. */
+    private long startsAt;
+    private long endsAt;
+
+    /**
+     * When the customer actually collected the car, or null for a reservation nobody
+     * has turned up for yet. Distinct from {@link #startsAt}: a car booked for Tuesday
+     * and collected on Tuesday afternoon has one window and a different pickup.
+     */
+    private Long collectedAt;
+
+    /**
+     * Dead to the program, kept alive for the files.
+     * <p>
+     * The legacy {@code .ser} records declare this as a primitive {@code long}. Java
+     * serialization matches fields on name <em>and</em> type and rejects the whole
+     * object when they disagree -- before {@code readObject} gets a chance to fix
+     * anything up. Changing this field to a {@code Long} therefore made every legacy
+     * booking unreadable, silently, and no test caught it because the fixtures were
+     * written by the current classes. So the old field stays exactly as it was, and
+     * {@link #readObject} copies it into {@link #collectedAt}.
+     */
+    private long RentTime;
+
+    private long ReturnTime; // stores System time when the car came back, 0 while it is out
 
     /**
      * What was actually charged when the car came back, or null while it is still out.
@@ -44,11 +68,50 @@ public class Booking implements Serializable {
     public Booking() {
     }
 
+    /**
+     * Fills in what a legacy {@code .ser} record cannot carry.
+     * <p>
+     * Those files predate both the reservation window and the nullable collection
+     * time. The old primitive {@code RentTime} is copied across, and the window is
+     * reconstructed as the time the car was actually out -- a day for one still on
+     * loan, which is the shortest honest guess.
+     *
+     * @see #RentTime
+     */
+    private void readObject(java.io.ObjectInputStream in)
+            throws java.io.IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        if (collectedAt == null && RentTime != 0) {
+            collectedAt = RentTime;
+        }
+        if (startsAt == 0 && collectedAt != null) {
+            startsAt = collectedAt;
+            endsAt = ReturnTime != 0 ? ReturnTime : collectedAt + 24L * 60 * 60 * 1000;
+        }
+    }
+
+    /**
+     * An immediate rental: the window is the moment of collection onward, and the car
+     * is taken straight away. Kept for the callers and tests that predate reservations.
+     */
     public Booking(int ID, Customer customer, Car car, long RentTime, long ReturnTime) {
+        this(ID, customer, car, RentTime, RentTime, RentTime, ReturnTime);
+    }
+
+    /**
+     * @param startsAt   when the car is spoken for from
+     * @param endsAt     when it is due back
+     * @param RentTime   when it was actually collected, or null if it has not been
+     * @param ReturnTime when it was actually returned, or 0 if it has not been
+     */
+    public Booking(int ID, Customer customer, Car car, long startsAt, long endsAt,
+                   Long RentTime, long ReturnTime) {
         this.ID = ID;
         this.customer = customer;
         this.car = car;
-        this.RentTime = RentTime;
+        this.startsAt = startsAt;
+        this.endsAt = endsAt;
+        this.collectedAt = RentTime;
         this.ReturnTime = ReturnTime;
     }
 
@@ -76,12 +139,54 @@ public class Booking implements Serializable {
         this.car = car;
     }
 
-    public long getRentTime() {
-        return RentTime;
+    /**
+     * @return when the car was collected, or null for a reservation not yet collected
+     */
+    public Long getRentTime() {
+        return collectedAt;
     }
 
-    public void setRentTime(long RentTime) {
-        this.RentTime = RentTime;
+    public void setRentTime(Long RentTime) {
+        this.collectedAt = RentTime;
+    }
+
+    public long getStartsAt() {
+        return startsAt;
+    }
+
+    public void setStartsAt(long startsAt) {
+        this.startsAt = startsAt;
+    }
+
+    public long getEndsAt() {
+        return endsAt;
+    }
+
+    public void setEndsAt(long endsAt) {
+        this.endsAt = endsAt;
+    }
+
+    /**
+     * @return true if the car has been collected and not yet brought back
+     */
+    public boolean isOut() {
+        return collectedAt != null && ReturnTime == 0;
+    }
+
+    /**
+     * @return true if this is a reservation nobody has collected yet
+     */
+    public boolean isAwaitingCollection() {
+        return collectedAt == null && ReturnTime == 0;
+    }
+
+    /**
+     * @return true if this booking's window overlaps the given one. Touching at an
+     *         endpoint is not an overlap: a car due back at noon can go out again at
+     *         noon.
+     */
+    public boolean overlaps(long otherStart, long otherEnd) {
+        return startsAt < otherEnd && otherStart < endsAt;
     }
 
     /**
@@ -145,7 +250,12 @@ public class Booking implements Serializable {
      */
     public int calculateBill() {
         // rent calculation
-        long rentTime = this.getRentTime();
+        Long collected = this.getRentTime();
+        if (collected == null) {
+//            never collected, so nothing was used and nothing is owed
+            return 0;
+        }
+        long rentTime = collected;
         long returnTime = this.getReturnTime();
         if (returnTime <= rentTime) {
 //            still out, or a clock that went backwards -- either way there is

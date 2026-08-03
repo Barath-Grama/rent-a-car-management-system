@@ -1,7 +1,9 @@
 package GUI;
 
 import BackendCode.CarOwner;
+import BackendCode.service.RecordValidator;
 import BackendCode.service.RegistryService;
+import BackendCode.service.ValidationResult;
 import BackendCode.service.ServiceResult;
 import java.awt.*;
 import java.awt.event.*;
@@ -157,44 +159,12 @@ public class CarOwner_Update {
                     String cnic = CNIC_TextField.getText().trim();
                     String name = Name_TextField.getText().trim();
                     String contact = Contact_TextField.getText().trim();
-                    if (!cnic.isEmpty()) {
-                        if (CarOwner.isCNICValid(cnic)) {
-                            CarOwner CO = CarOwner.SearchByCNIC(cnic);
-//                            a CNIC already on record is only a clash when it belongs
-//                            to somebody else, not when it is this owner's own
-                            if (CO != null && !cnic.equals(carOwner.getCNIC())) {
-                                cnic = null;
-                                JOptionPane.showMessageDialog(null, "This CNIC is already registered !");
-                            }
-                        } else {
-                            cnic = null;
-                            CNICValidity_Label.setText("Invalid CNIC !");
-                        }
-                    } else {
-                        cnic = null;
-                        CNICValidity_Label.setText("Enter CNIC !");
-                    }
-                    if (!name.isEmpty()) {
-                        if (CarOwner.isNameValid(name)) {
-                        } else {
-                            name = null;
-                            NameValidity_Label.setText("Invalid Name !");
-                        }
-                    } else {
-                        name = null;
-                        NameValidity_Label.setText("Enter Name !");
-                    }
-                    if (!contact.isEmpty()) {
-                        if (CarOwner.isContactNoValid(contact)) {
-                        } else {
-                            contact = null;
-                            contactValidity_Label.setText("Invalid Contact Number!");
-                        }
-                    } else {
-                        contact = null;
-                        contactValidity_Label.setText("Enter Contact Number !");
-                    }
-                    if (cnic != null && name != null && contact != null) {
+//                    One check, and each message goes beside the box it belongs to.
+                    ValidationResult fields = RecordValidator.validatePerson(cnic, name, contact);
+                    CNICValidity_Label.setText(fields.messageFor(ValidationResult.CNIC));
+                    NameValidity_Label.setText(fields.messageFor(ValidationResult.NAME));
+                    contactValidity_Label.setText(fields.messageFor(ValidationResult.CONTACT));
+                    if (fields.isValid()) {
                         carOwner = new CarOwner(carOwner.getBalance(), carOwner.getID(), cnic, name, contact);
                         ServiceResult result = RegistryService.updateCarOwner(carOwner);
                         if (!result.isSuccess()) {

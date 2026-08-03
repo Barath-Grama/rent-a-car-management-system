@@ -1,7 +1,9 @@
 package GUI;
 
 import BackendCode.Car;
+import BackendCode.service.RecordValidator;
 import BackendCode.service.RegistryService;
+import BackendCode.service.ValidationResult;
 import BackendCode.service.ServiceResult;
 import BackendCode.CarOwner;
 import java.awt.*;
@@ -172,80 +174,20 @@ public final class Car_Add extends JFrame {
                         ownerID = OwnerID_TextField.getText().trim(),
                         rentPerHour = RentPerHour_TextField.getText().trim();
 
-                if (!name.isEmpty()) {
-                    if (Car.isNameValid(Name_TextField.getText().trim())) {
-                        NameValidity_Label.setText("");
-//                        name = Name_TextField.getText().trim();
-                    } else {
-                        name = null;
-                        NameValidity_Label.setText("                                                            Invalid  Car Name !");
-                    }
-                } else {
-                    name = null;
-                    NameValidity_Label.setText("                                                            Enter Car Name !");
-                }
-                if (!maker.isEmpty()) {
-                    if (Car.isNameValid(maker)) {
-                        MakerValidity_Label.setText("");
-//                        maker = Maker_TextField.getText().trim();
-                    } else {
-                        maker = null;
-                        MakerValidity_Label.setText("                                                            Invalid Maker's Name !");
-                    }
-                } else {
-                    maker = null;
-                    MakerValidity_Label.setText("                                                            Enter Maker'sName !");
-                }
-                if (!regNo.isEmpty()) {
-                    if (Car.isRegNoValid(regNo)) {
-                        RegNoValidity_Label.setText("");
-                    } else {
-                        regNo = null;
-                        RegNoValidity_Label.setText("                                                            Invalid Reg no !");
-                    }
-                } else {
-                    regNo = null;
-                    RegNoValidity_Label.setText("                                                            Enter Reg No !");
-                }
-                if (!ownerID.isEmpty()) {
-                    try {
-                        if (Integer.parseInt(ownerID) > 0) {
-                            OwnerIDValidity_Label.setText("");
-//                            ownerID = OwnerID_TextField.getText().trim();
-                        } else {
-                            ownerID = null;
-                            OwnerIDValidity_Label.setText("                                                            ID cannot be '0' or negative !");
-                        }
-                    } catch (NumberFormatException ex) {
-                        ownerID = null;
-                        OwnerIDValidity_Label.setText("                                                            Invalid ID !");
-                    }
-                } else {
-                    ownerID = null;
-                    OwnerIDValidity_Label.setText("                                                            Enter Owner ID !");
-                }
-                if (!rentPerHour.isEmpty()) {
-                    try {
-                        if (Integer.parseInt(rentPerHour) > 0) {
-                            RentPerHourValidity_Label.setText("");
-                        } else {
-                            rentPerHour = null;
-                            RentPerHourValidity_Label.setText("                                                            Rent cannot be '0' or negative !");
-                        }
-                    } catch (NumberFormatException ex) {
-
-                        rentPerHour = null;
-                        RentPerHourValidity_Label.setText("                                                            Invalid Rent !");
-                    }
-
-                } else {
-                    rentPerHour = null;
-                    RentPerHourValidity_Label.setText("                                                            Enter Rent !");
+                // One check, and each message goes beside the box it belongs to.
+                ValidationResult fields = RecordValidator.validateCar(maker, name, regNo, ownerID, rentPerHour);
+                MakerValidity_Label.setText(fields.messageFor(ValidationResult.MAKER));
+                NameValidity_Label.setText(fields.messageFor(ValidationResult.NAME));
+                RegNoValidity_Label.setText(fields.messageFor(ValidationResult.REG_NO));
+                OwnerIDValidity_Label.setText(fields.messageFor(ValidationResult.OWNER_ID));
+                RentPerHourValidity_Label.setText(fields.messageFor(ValidationResult.RENT_PER_HOUR));
+                if (!fields.isValid()) {
+                    return;
                 }
 
 //Car(id, maker, name, color, Type, seatingCapacity, model, condition, regNo, rentPerHour, carOwner);
                 try {
-                    if (maker != null && name != null && regNo != null && ownerID != null && rentPerHour != null) {
+                    {
                         //Car(id, Maker, Name, Colour, Type, SeatingCapacity, Model, Condition, RegNo, RentPerHour, carOwner)
                         // id is auto
                         Car car = new Car(0, maker, name, Colour_ComboBox.getSelectedItem() + "",

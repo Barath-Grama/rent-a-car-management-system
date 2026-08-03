@@ -35,6 +35,10 @@ public final class RegistryService {
      * @return what happened, with a message for the user
      */
     public static ServiceResult addCustomer(Customer customer) {
+        ServiceResult fields = validate(customer.getCNIC(), customer.getName(), customer.getContact_No());
+        if (!fields.isSuccess()) {
+            return fields;
+        }
         if (CustomerDao.findByCnic(customer.getCNIC()) != null) {
             return ServiceResult.failed("This CNIC is already registered !");
         }
@@ -49,6 +53,10 @@ public final class RegistryService {
      * @return what happened, with a message for the user
      */
     public static ServiceResult updateCustomer(Customer customer) {
+        ServiceResult fields = validate(customer.getCNIC(), customer.getName(), customer.getContact_No());
+        if (!fields.isSuccess()) {
+            return fields;
+        }
         Customer holder = CustomerDao.findByCnic(customer.getCNIC());
 //        a CNIC already on record is only a clash when somebody else holds it
         if (holder != null && holder.getID() != customer.getID()) {
@@ -63,6 +71,10 @@ public final class RegistryService {
     // ---------------- car owners ----------------
 
     public static ServiceResult addCarOwner(CarOwner owner) {
+        ServiceResult fields = validate(owner.getCNIC(), owner.getName(), owner.getContact_No());
+        if (!fields.isSuccess()) {
+            return fields;
+        }
         if (CarOwnerDao.findByCnic(owner.getCNIC()) != null) {
             return ServiceResult.failed("This CNIC is already registered !");
         }
@@ -73,6 +85,10 @@ public final class RegistryService {
     }
 
     public static ServiceResult updateCarOwner(CarOwner owner) {
+        ServiceResult fields = validate(owner.getCNIC(), owner.getName(), owner.getContact_No());
+        if (!fields.isSuccess()) {
+            return fields;
+        }
         CarOwner holder = CarOwnerDao.findByCnic(owner.getCNIC());
         if (holder != null && holder.getID() != owner.getID()) {
             return ServiceResult.failed("This CNIC is already registered !");
@@ -90,6 +106,10 @@ public final class RegistryService {
      * @return what happened, with a message for the user
      */
     public static ServiceResult addCar(Car car) {
+        ServiceResult fields = validateCar(car);
+        if (!fields.isSuccess()) {
+            return fields;
+        }
         ServiceResult owner = checkOwner(car);
         if (!owner.isSuccess()) {
             return owner;
@@ -108,6 +128,10 @@ public final class RegistryService {
      * @return what happened, with a message for the user
      */
     public static ServiceResult updateCar(Car car) {
+        ServiceResult fields = validateCar(car);
+        if (!fields.isSuccess()) {
+            return fields;
+        }
         ServiceResult owner = checkOwner(car);
         if (!owner.isSuccess()) {
             return owner;
@@ -120,6 +144,21 @@ public final class RegistryService {
             return ServiceResult.failed("The car could not be saved.");
         }
         return ServiceResult.ok("Record Successfully Updated !");
+    }
+
+    /**
+     * The screens check these field by field so they can put each message beside the
+     * box it belongs to. Repeating the check here is not redundancy: it is what stops
+     * a record reaching the database unvalidated because a new caller forgot.
+     */
+    private static ServiceResult validate(String cnic, String name, String contact) {
+        return RecordValidator.validatePerson(cnic, name, contact).asServiceResult();
+    }
+
+    private static ServiceResult validateCar(Car car) {
+        return RecordValidator.validateCar(car.getMaker(), car.getName(), car.getRegNo(),
+                car.getCarOwner() == null ? null : String.valueOf(car.getCarOwner().getID()),
+                String.valueOf(car.getRentPerHour())).asServiceResult();
     }
 
     /**

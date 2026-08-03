@@ -1,7 +1,9 @@
 package GUI;
 
 import BackendCode.Customer;
+import BackendCode.service.RecordValidator;
 import BackendCode.service.RegistryService;
+import BackendCode.service.ValidationResult;
 import BackendCode.service.ServiceResult;
 import java.awt.*;
 import java.awt.event.*;
@@ -89,17 +91,12 @@ public class Customer_Add {
                     String name = Name_TextField.getText().trim();
                     String contact = Contact_TextField.getText().trim();
 
-//                    Per-field checks stay here: each one names the box that is wrong.
-                    if (!Customer.isCNICValid(cnic)) {
-                        JOptionPane.showMessageDialog(null, "Invalid CNIC");
-                        break;
-                    }
-                    if (!Customer.isNameValid(name)) {
-                        JOptionPane.showMessageDialog(null, "Invalid Name !");
-                        break;
-                    }
-                    if (!Customer.isContactNoValid(contact)) {
-                        JOptionPane.showMessageDialog(null, "Invalid contact no. !");
+//                    One check, and each message goes beside the box it belongs to.
+                    ValidationResult fields = RecordValidator.validatePerson(cnic, name, contact);
+                    CNICValidity_Label.setText(fields.messageFor(ValidationResult.CNIC));
+                    NameValidity_Label.setText(fields.messageFor(ValidationResult.NAME));
+                    contactValidity_Label.setText(fields.messageFor(ValidationResult.CONTACT));
+                    if (!fields.isValid()) {
                         break;
                     }
 //                    Whether the CNIC is already taken, and whether the write landed,

@@ -1,7 +1,9 @@
 package GUI;
 
 import BackendCode.Car;
+import BackendCode.service.RecordValidator;
 import BackendCode.service.RegistryService;
+import BackendCode.service.ValidationResult;
 import BackendCode.service.ServiceResult;
 import BackendCode.CarOwner;
 import java.awt.*;
@@ -280,88 +282,20 @@ public final class Car_Update extends JFrame {
                             OwnerID = OwnerID_TextField.getText().trim(),
                             RentPerHour = RentPerHour_TextField.getText().trim();
 
-                    if (!Name.isEmpty()) {
-                        if (Car.isNameValid(Name)) {
-                            NameValidity_Label.setText("");
-                        } else {
-                            Name = null;
-                            NameValidity_Label.setText("                                                            Invalid  Car Name !");
-                        }
-                    } else {
-                        Name = null;
-                        NameValidity_Label.setText("                                                            Enter Car Name !");
+                    // One check, and each message goes beside the box it belongs to.
+                    ValidationResult fields = RecordValidator.validateCar(Maker, Name, RegNo, OwnerID, RentPerHour);
+                    MakerValidity_Label.setText(fields.messageFor(ValidationResult.MAKER));
+                    NameValidity_Label.setText(fields.messageFor(ValidationResult.NAME));
+                    RegNoValidity_Label.setText(fields.messageFor(ValidationResult.REG_NO));
+                    OwnerIDValidity_Label.setText(fields.messageFor(ValidationResult.OWNER_ID));
+                    RentPerHourValidity_Label.setText(fields.messageFor(ValidationResult.RENT_PER_HOUR));
+                    if (!fields.isValid()) {
+                        return;
                     }
-                    if (!Maker.isEmpty()) {
-                        if (Car.isNameValid(Maker)) {
-                            MakerValidity_Label.setText("");
-                        } else {
-                            Maker = null;
-                            MakerValidity_Label.setText("                                                            Invalid Maker's Name !");
-                        }
-                    } else {
-                        Maker = null;
-                        MakerValidity_Label.setText("                                                            Enter Maker'sName !");
-                    }
-                    if (!RegNo.isEmpty()) {
-                        if (Car.isRegNoValid(RegNo)) {
-                            RegNoValidity_Label.setText("");
-                            Car car2 = Car.SearchByRegNo(RegNo);
-                            // checking if the newly entered regNo is already registered or not
-                            if ((car2 != null) && (!RegNo.equalsIgnoreCase(car.getRegNo()))) {
-                                RegNo = null;
-                                JOptionPane.showMessageDialog(null, "This Car Registeration no is already registered !");
-                            }
-                        } else {
-                            RegNo = null;
-                            RegNoValidity_Label.setText("                                                            Invalid Reg no !");
-                        }
-                    } else {
-                        RegNo = null;
-                        RegNoValidity_Label.setText("                                                            Enter Reg No !");
-                    }
-                    if (!OwnerID.isEmpty()) {
-                        try {
-                            if (Integer.parseInt(OwnerID) > 0) {
-                                OwnerIDValidity_Label.setText("");
-                                carOwner = CarOwner.SearchByID(Integer.parseInt(OwnerID));
-                                if (carOwner != null) {
-                                    // if owner id is valid and owner exists 
-                                    OwnerIDValidity_Label.setText("");
-                                } else {
-                                    OwnerID = null;
-                                    JOptionPane.showMessageDialog(null, "Owner ID doesnot exists !");
-                                }
-                            } else {
-                                OwnerID = null;
-                                OwnerIDValidity_Label.setText("                                                            ID cannot be '0' or negative !");
-                            }
-                        } catch (NumberFormatException ex) {
-                            OwnerID = null;
-                            OwnerIDValidity_Label.setText("                                                            Invalid ID !");
-                        }
-                    } else {
-                        OwnerID = null;
-                        OwnerIDValidity_Label.setText("                                                            Enter Owner ID !");
-                    }
-                    if (!RentPerHour.isEmpty()) {
-                        try {
-                            if (Integer.parseInt(RentPerHour) > 0) {
-                                RentPerHourValidity_Label.setText("");
-                            } else {
-                                RentPerHour = null;
-                                RentPerHourValidity_Label.setText("                                                            Rent cannot be '0' or negative !");
-                            }
-                        } catch (NumberFormatException ex) {
-                            RentPerHour = null;
-                            RentPerHourValidity_Label.setText("                                                            Invalid Rent !");
-                        }
-                    } else {
-                        RentPerHour = null;
-                        RentPerHourValidity_Label.setText("                                                            Enter Rent !");
-                    }
+                    carOwner = CarOwner.SearchByID(Integer.parseInt(OwnerID));
 
                     try {
-                        if (Maker != null && Name != null && RegNo != null && OwnerID != null && RentPerHour != null) {
+                        {
 //new Car(ID, Maker, Name, Colour, Type, seatingCapacity, model, Condition, RegNo, RentPerHour, carOwner)
                             car = new Car(car.getID(), Maker, Name, Colour_ComboBox.getSelectedItem() + "",
                                     Type_ComboBox.getSelectedItem() + "", Integer.parseInt(SeatingCapacity_Spinner.getValue() + ""),

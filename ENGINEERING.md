@@ -335,9 +335,9 @@ Reported as latent rather than active.
 
 ## 7. What I would do next
 
-- **Reservations do not expire.** A window nobody turns up for holds the car forever
-  and keeps blocking overlapping bookings. Releasing it after a grace period is the
-  obvious next rule.
+- **The grace period is a constant.** Two hours is baked in, because nothing in this
+  program has settings yet and inventing a configuration mechanism for one number would
+  be the larger change. A rental desk would want to set it.
 - **Retired records keep their CNIC and registration.** Those values cannot be reused,
   which is the right default but should probably be a choice at the point of removal.
 - **One connection, one machine.** SQLite and a single shared connection are right for

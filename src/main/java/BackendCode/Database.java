@@ -92,6 +92,20 @@ public final class Database {
         addAmountCharged(target);
         addDeletedFlags(target);
         addReservationWindow(target);
+        addExpiredAt(target);
+    }
+
+    /**
+     * Somewhere to record a reservation nobody turned up for.
+     */
+    private static void addExpiredAt(Connection target) throws SQLException {
+        if (hasColumn(target, "booking", "expired_at")) {
+            return;
+        }
+        LOG.info("migrating: adding booking.expired_at");
+        try (Statement statement = target.createStatement()) {
+            statement.execute("ALTER TABLE booking ADD COLUMN expired_at INTEGER");
+        }
     }
 
     /**
@@ -125,16 +139,17 @@ public final class Database {
               + "  ends_at INTEGER NOT NULL,"
               + "  rent_time INTEGER,"
               + "  return_time INTEGER,"
-              + "  amount_charged INTEGER)");
+              + "  amount_charged INTEGER,"
+              + "  expired_at INTEGER)");
 //            An existing booking was always an immediate rental, so its window is the
 //            time it was actually out. One still on loan has no end yet, so it is given
 //            a day, which is the shortest honest guess and is visibly a guess.
             statement.executeUpdate(
                 "INSERT INTO booking_new (id, customer_id, car_id, starts_at, ends_at,"
-              + " rent_time, return_time, amount_charged) "
+              + " rent_time, return_time, amount_charged, expired_at) "
               + "SELECT id, customer_id, car_id, rent_time,"
               + "       COALESCE(return_time, rent_time + 86400000),"
-              + "       rent_time, return_time, amount_charged FROM booking");
+              + "       rent_time, return_time, amount_charged, NULL FROM booking");
             statement.execute("DROP TABLE booking");
             statement.execute("ALTER TABLE booking_new RENAME TO booking");
             statement.execute("PRAGMA foreign_keys = ON");

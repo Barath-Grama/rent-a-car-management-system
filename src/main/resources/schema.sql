@@ -67,7 +67,12 @@ CREATE TABLE IF NOT EXISTS booking (
     -- Revenue reports must not recompute this from the car's rent_per_hour: that
     -- rate is editable, so raising a price would silently rewrite the takings of
     -- every rental that car ever had. NULL until the car comes back.
-    amount_charged INTEGER
+    amount_charged INTEGER,
+    -- When a reservation was given up as a no-show. NULL for everything else.
+    -- Recorded rather than worked out from the clock on each read: whether somebody
+    -- turned up is a fact about what happened, it wants to be visible in the table,
+    -- and a derived answer would quietly change as the grace period is tuned.
+    expired_at   INTEGER
 );
 
 -- Who may sign in. The password is a BCrypt hash, never the password itself, and the
@@ -90,3 +95,6 @@ CREATE INDEX IF NOT EXISTS idx_booking_car       ON booking(car_id);
 CREATE INDEX IF NOT EXISTS idx_booking_open      ON booking(car_id) WHERE return_time IS NULL;
 -- The overlap check scans a car's reservations by window.
 CREATE INDEX IF NOT EXISTS idx_booking_window    ON booking(car_id, starts_at, ends_at);
+-- The sweep looks for uncollected holds that are past their grace period.
+CREATE INDEX IF NOT EXISTS idx_booking_uncollected ON booking(starts_at)
+    WHERE rent_time IS NULL AND return_time IS NULL AND expired_at IS NULL;

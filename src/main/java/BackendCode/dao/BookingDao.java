@@ -34,7 +34,7 @@ public final class BookingDao {
 
     private static final String SELECT =
             "SELECT b.id, b.starts_at, b.ends_at, b.rent_time, b.return_time, "
-          + "b.amount_charged, b.customer_id, b.car_id FROM booking b ";
+          + "b.amount_charged, b.expired_at, b.customer_id, b.car_id FROM booking b ";
 
     private BookingDao() {
     }
@@ -55,6 +55,8 @@ public final class BookingDao {
                 rows.getLong("starts_at"), rows.getLong("ends_at"), collected, returnTime);
         int charged = rows.getInt("amount_charged");
         booking.setAmountCharged(rows.wasNull() ? null : charged);
+        long expired = rows.getLong("expired_at");
+        booking.setExpiredAt(rows.wasNull() ? null : expired);
         return booking;
     }
 
@@ -106,6 +108,7 @@ public final class BookingDao {
      */
     public static ArrayList<Booking> findClashing(int carId, long startsAt, long endsAt) {
         return query(SELECT + "WHERE b.car_id = ? AND b.return_time IS NULL "
+                + "AND b.expired_at IS NULL "
                 + "AND b.starts_at < ? AND ? < b.ends_at ORDER BY b.starts_at",
                 carId, endsAt, startsAt);
     }
@@ -115,7 +118,29 @@ public final class BookingDao {
      */
     public static ArrayList<Booking> findAwaitingCollection() {
         return query(SELECT + "WHERE b.rent_time IS NULL AND b.return_time IS NULL "
-                + "ORDER BY b.starts_at");
+                + "AND b.expired_at IS NULL ORDER BY b.starts_at");
+    }
+
+    /**
+     * Gives up every hold nobody turned up for in time.
+     *
+     * @param graceMillis how long after a window opens the customer has to arrive
+     * @param now         the moment to judge against
+     * @return how many were given up
+     */
+    public static int expireStale(long graceMillis, long now) {
+        String sql = "UPDATE booking SET expired_at = ? "
+                + "WHERE rent_time IS NULL AND return_time IS NULL AND expired_at IS NULL "
+                + "AND starts_at + ? < ?";
+        try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
+            statement.setLong(1, now);
+            statement.setLong(2, graceMillis);
+            statement.setLong(3, now);
+            return statement.executeUpdate();
+        } catch (SQLException ex) {
+            LOG.error("could not expire stale reservations", ex);
+            return 0;
+        }
     }
 
     /**
@@ -141,7 +166,7 @@ public final class BookingDao {
 
     public static boolean insert(Booking booking) {
         String sql = "INSERT INTO booking (customer_id, car_id, starts_at, ends_at, rent_time, "
-                + "return_time, amount_charged) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                + "return_time, amount_charged, expired_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = Database.connection()
                 .prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             bindFields(statement, booking);
@@ -162,10 +187,10 @@ public final class BookingDao {
 
     public static boolean update(Booking booking) {
         String sql = "UPDATE booking SET customer_id = ?, car_id = ?, starts_at = ?, ends_at = ?, "
-                + "rent_time = ?, return_time = ?, amount_charged = ? WHERE id = ?";
+                + "rent_time = ?, return_time = ?, amount_charged = ?, expired_at = ? WHERE id = ?";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
             bindFields(statement, booking);
-            statement.setInt(8, booking.getID());
+            statement.setInt(9, booking.getID());
             return statement.executeUpdate() == 1;
         } catch (SQLException ex) {
             LOG.error("could not update a booking", ex);
@@ -194,6 +219,11 @@ public final class BookingDao {
             statement.setNull(7, Types.INTEGER);
         } else {
             statement.setInt(7, booking.getAmountCharged());
+        }
+        if (booking.getExpiredAt() == null) {
+            statement.setNull(8, Types.INTEGER);
+        } else {
+            statement.setLong(8, booking.getExpiredAt());
         }
     }
 

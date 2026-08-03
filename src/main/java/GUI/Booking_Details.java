@@ -1,5 +1,6 @@
 package GUI;
 
+import BackendCode.service.RentalService;
 import BackendCode.service.UserService;
 import BackendCode.Booking;
 import BackendCode.Car;
@@ -73,6 +74,8 @@ public final class Booking_Details {
         jScrollPane1.setViewportView(jTable1);
         jTable1.setFillsViewportHeight(true);// makes the size of table equal to that of scroll pane to fill the table in the scrollpane
         TableTools.attach(jTable1, Filter_TextField);
+//        so a hold that ran out while this screen was closed shows as given up
+        RentalService.expireStaleReservations();
         ArrayList<Booking> Booking_objects = Booking.View();
         for (int i = 0; i < Booking_objects.size(); i++) {
 //ID,  Maker,  Name,  Colour,  Type,  SeatingCapacity,  Model,  Condition,  RegNo, 
@@ -93,6 +96,9 @@ public final class Booking_Details {
                 status = "Returned " + dateFormat.format(new Date(Booking_objects.get(i).getReturnTime()));
             } else if (Booking_objects.get(i).isOut()) {
                 status = "Out since " + dateFormat.format(new Date(Booking_objects.get(i).getRentTime()));
+            } else if (Booking_objects.get(i).isExpired()) {
+                status = "Not collected, given up "
+                        + dateFormat.format(new Date(Booking_objects.get(i).getExpiredAt()));
             } else {
                 status = "Reserved, not collected";
             }

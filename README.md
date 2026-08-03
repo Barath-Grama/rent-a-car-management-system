@@ -3,12 +3,12 @@
 [![build](../../actions/workflows/build.yml/badge.svg)](../../actions/workflows/build.yml)
 ![Java](https://img.shields.io/badge/Java-21-orange)
 ![SQLite](https://img.shields.io/badge/SQLite-3-blue)
-![tests](https://img.shields.io/badge/tests-160%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-170%20passing-brightgreen)
 ![coverage](https://img.shields.io/badge/coverage-80%25%20instruction-brightgreen)
 
 A Java desktop application for running a car rental business: the fleet, the owners who
 supply it, the customers who rent from it, and the money that moves between them.
-SQLite behind a DAO and service layer, 160 tests including the Swing screens, CI on every push.
+SQLite behind a DAO and service layer, 170 tests including the Swing screens, CI on every push.
 
 ![Dashboard](docs/dashboard.png)
 
@@ -29,7 +29,7 @@ empty database. Change it before anyone else can reach the machine. Data lands i
 `rentacar.db` in the working directory.
 
 ```bash
-mvn verify     # 160 tests
+mvn verify     # 170 tests
 ```
 
 ---
@@ -127,7 +127,7 @@ mistakes I made along the way, because the corrections are the useful part.
 |---|---|---|
 | Storage | 4 files of serialized Java objects | SQLite with foreign keys and constraints |
 | Build | NetBeans Ant, unresolvable classpath | `mvn clean package`, self-contained jar |
-| Tests | none | 160, run on every push |
+| Tests | none | 170, run on every push |
 | Money | 3 loose writes in a button handler | one transaction, committed or rolled back |
 | Errors | printed to a console nobody sees | logged, and reported on screen |
 | Passwords | plaintext literals in the source | BCrypt hashes in the database |
@@ -151,8 +151,6 @@ and the whole test suite.
 ## Known limitations
 
 - **Single user, single machine.** One SQLite file, one connection, no networking.
-- **Reservations do not expire.** A window nobody collects stays on the car forever and
-  keeps blocking overlapping bookings. A real system would release it.
 - **Retired records keep their CNIC and registration**, so those values cannot be reused.
   That is the right default -- the person still exists, you have stopped dealing with
   them -- but it is a decision, not an accident.

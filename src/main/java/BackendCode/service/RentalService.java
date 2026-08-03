@@ -10,6 +10,8 @@ import BackendCode.dao.CarDao;
 import BackendCode.dao.CarOwnerDao;
 import BackendCode.dao.CustomerDao;
 import java.text.SimpleDateFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -29,7 +31,21 @@ import java.util.Date;
  */
 public final class RentalService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(RentalService.class);
+
     private static final long ONE_DAY = 24L * 60 * 60 * 1000;
+
+    /**
+     * How long after a reservation opens the customer has to turn up before the car is
+     * put back on the fleet.
+     * <p>
+     * Two hours is a judgement, not a law: long enough to absorb traffic and a late
+     * train, short enough that a morning no-show does not cost the afternoon. It is a
+     * constant rather than a setting because nothing in this program has settings yet,
+     * and inventing a configuration mechanism for one number would be the larger
+     * change.
+     */
+    public static final long COLLECTION_GRACE = 2 * 60 * 60 * 1000L;
 
     /** How a booking window is written back to the user. */
     private static final SimpleDateFormat WHEN = new SimpleDateFormat("dd-MM-yyyy hh:mm a");
@@ -68,6 +84,10 @@ public final class RentalService {
      */
     private static ServiceResult reserve(int carId, int customerId, long startsAt, long endsAt,
                                          boolean collectNow) {
+//        Give up anything stale first, so a hold nobody turned up for does not block
+//        this one. Doing it here rather than on a timer keeps the program free of
+//        background threads: the only moment it matters is when somebody asks for a car.
+        expireStaleReservations();
         Car car = CarDao.findById(carId);
         if (car == null) {
             return ServiceResult.failed("Car ID does not exist !");
@@ -106,6 +126,7 @@ public final class RentalService {
      * @return what happened, with a message for the user
      */
     public static ServiceResult collect(int bookingId) {
+        expireStaleReservations();
         for (Booking booking : BookingDao.findAwaitingCollection()) {
             if (booking.getID() != bookingId) {
                 continue;
@@ -119,7 +140,33 @@ public final class RentalService {
             }
             return ServiceResult.ok("Car collected !");
         }
+//        Distinguish "there is no such hold" from "there was, and it lapsed", because
+//        the second is the one the customer will argue about.
+        for (Booking booking : BookingDao.findAll()) {
+            if (booking.getID() == bookingId && booking.isExpired()) {
+                return ServiceResult.failed("That reservation was given up at "
+                        + WHEN.format(new Date(booking.getExpiredAt()))
+                        + ", " + (COLLECTION_GRACE / (60 * 60 * 1000)) + " hours after it was due."
+                        + "\nBook the car again if it is free.");
+            }
+        }
         return ServiceResult.failed("No reservation is waiting to be collected under that ID.");
+    }
+
+    /**
+     * Gives up every reservation nobody turned up for within {@link #COLLECTION_GRACE}.
+     * <p>
+     * Called before anything that depends on which cars are spoken for. Safe to call
+     * as often as you like: a hold already given up is not touched again.
+     *
+     * @return how many were given up
+     */
+    public static int expireStaleReservations() {
+        int given = BookingDao.expireStale(COLLECTION_GRACE, System.currentTimeMillis());
+        if (given > 0) {
+            LOG.info("gave up {} reservation(s) nobody collected", given);
+        }
+        return given;
     }
 
     /**

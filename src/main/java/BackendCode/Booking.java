@@ -65,6 +65,17 @@ public class Booking implements Serializable {
      */
     private Integer amountCharged;
 
+    /**
+     * When this reservation was given up as a no-show, or null if it was not.
+     * <p>
+     * A hold that nobody collects has to stop blocking the car at some point, or one
+     * forgotten booking takes it off the fleet permanently. Recorded rather than
+     * inferred from the clock: whether somebody turned up is a fact about what
+     * happened, and a derived answer would change retroactively every time the grace
+     * period was adjusted.
+     */
+    private Long expiredAt;
+
     public Booking() {
     }
 
@@ -174,10 +185,37 @@ public class Booking implements Serializable {
     }
 
     /**
-     * @return true if this is a reservation nobody has collected yet
+     * @return true if this is a live reservation still waiting to be collected
      */
     public boolean isAwaitingCollection() {
-        return collectedAt == null && ReturnTime == 0;
+        return collectedAt == null && ReturnTime == 0 && expiredAt == null;
+    }
+
+    /**
+     * @return true if nobody turned up for this reservation in time
+     */
+    public boolean isExpired() {
+        return expiredAt != null;
+    }
+
+    /**
+     * @return when it was given up, or null if it was not
+     */
+    public Long getExpiredAt() {
+        return expiredAt;
+    }
+
+    public void setExpiredAt(Long expiredAt) {
+        this.expiredAt = expiredAt;
+    }
+
+    /**
+     * @param graceMillis how long after the window opens a customer has to turn up
+     * @param now         the moment to judge against
+     * @return true if this hold has run out of time and should be given up
+     */
+    public boolean hasLapsed(long graceMillis, long now) {
+        return isAwaitingCollection() && now > startsAt + graceMillis;
     }
 
     /**

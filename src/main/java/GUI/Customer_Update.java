@@ -1,6 +1,8 @@
 package GUI;
 
 import BackendCode.Customer;
+import BackendCode.service.RegistryService;
+import BackendCode.service.ServiceResult;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -193,7 +195,10 @@ public class Customer_Update {
                     }
                     if (cnic != null && name != null && contact != null) {
                         customer = new Customer(customer.getBill(), customer.getID(), cnic, name, contact);
-                        if (!SaveReport.check(customer.Update())) {
+                        ServiceResult result = RegistryService.updateCustomer(customer);
+                        if (!result.isSuccess()) {
+                            JOptionPane.showMessageDialog(null, result.getMessage(),
+                                    "Error", JOptionPane.ERROR_MESSAGE);
                             return;
                         }
                         Parent_JFrame.getMainFrame().getContentPane().removeAll();
@@ -201,7 +206,7 @@ public class Customer_Update {
                         Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                         Parent_JFrame.getMainFrame().getContentPane().revalidate();
                         Parent_JFrame.getMainFrame().getContentPane().repaint();
-                        JOptionPane.showMessageDialog(null, "Record Successfully Updated !");
+                        JOptionPane.showMessageDialog(null, result.getMessage());
                         Parent_JFrame.getMainFrame().setEnabled(true);
                         dispose();
                     }

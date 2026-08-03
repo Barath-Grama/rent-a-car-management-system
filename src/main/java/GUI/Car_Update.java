@@ -1,6 +1,8 @@
 package GUI;
 
 import BackendCode.Car;
+import BackendCode.service.RegistryService;
+import BackendCode.service.ServiceResult;
 import BackendCode.CarOwner;
 import java.awt.*;
 import java.awt.event.*;
@@ -366,7 +368,10 @@ public final class Car_Update extends JFrame {
                                     Model_ComboBox.getSelectedItem() + "",
                                     Condition_ComboBox.getSelectedItem() + "",
                                     RegNo, Integer.parseInt(RentPerHour), carOwner);
-                            if (!SaveReport.check(car.Update())) {
+                            ServiceResult result = RegistryService.updateCar(car);
+                            if (!result.isSuccess()) {
+                                JOptionPane.showMessageDialog(null, result.getMessage(),
+                                        "Error", JOptionPane.ERROR_MESSAGE);
                                 return;
                             }
 
@@ -376,7 +381,7 @@ public final class Car_Update extends JFrame {
                             Parent_JFrame.getMainFrame().getContentPane().revalidate();
                             Parent_JFrame.getMainFrame().getContentPane().repaint();
 
-                            JOptionPane.showMessageDialog(null, "Record Successfully Updated !");
+                            JOptionPane.showMessageDialog(null, result.getMessage());
 
                             Parent_JFrame.getMainFrame().setEnabled(true);
                             dispose();

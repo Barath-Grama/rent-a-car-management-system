@@ -1,6 +1,8 @@
 package GUI;
 
 import BackendCode.CarOwner;
+import BackendCode.service.RegistryService;
+import BackendCode.service.ServiceResult;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -194,7 +196,10 @@ public class CarOwner_Update {
                     }
                     if (cnic != null && name != null && contact != null) {
                         carOwner = new CarOwner(carOwner.getBalance(), carOwner.getID(), cnic, name, contact);
-                        if (!SaveReport.check(carOwner.Update())) {
+                        ServiceResult result = RegistryService.updateCarOwner(carOwner);
+                        if (!result.isSuccess()) {
+                            JOptionPane.showMessageDialog(null, result.getMessage(),
+                                    "Error", JOptionPane.ERROR_MESSAGE);
                             return;
                         }
                         Parent_JFrame.getMainFrame().getContentPane().removeAll();
@@ -202,7 +207,7 @@ public class CarOwner_Update {
                         Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                         Parent_JFrame.getMainFrame().getContentPane().revalidate();
                         Parent_JFrame.getMainFrame().getContentPane().repaint();
-                        JOptionPane.showMessageDialog(null, "Record Successfully Updated !");
+                        JOptionPane.showMessageDialog(null, result.getMessage());
                         Parent_JFrame.getMainFrame().setEnabled(true);
                         dispose();
                     }

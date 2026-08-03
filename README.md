@@ -3,12 +3,12 @@
 [![build](../../actions/workflows/build.yml/badge.svg)](../../actions/workflows/build.yml)
 ![Java](https://img.shields.io/badge/Java-21-orange)
 ![SQLite](https://img.shields.io/badge/SQLite-3-blue)
-![tests](https://img.shields.io/badge/tests-85%20passing-brightgreen)
-![coverage](https://img.shields.io/badge/coverage-64%25%20instruction-yellowgreen)
+![tests](https://img.shields.io/badge/tests-111%20passing-brightgreen)
+![coverage](https://img.shields.io/badge/coverage-80%25%20instruction-brightgreen)
 
 A Java desktop application for running a car rental business: the fleet, the owners who
 supply it, the customers who rent from it, and the money that moves between them.
-SQLite behind a DAO and service layer, 85 tests, CI on every push.
+SQLite behind a DAO and service layer, 111 tests, CI on every push.
 
 ![Dashboard](docs/dashboard.png)
 
@@ -29,7 +29,7 @@ empty database. Change it before anyone else can reach the machine. Data lands i
 `rentacar.db` in the working directory.
 
 ```bash
-mvn verify     # 85 tests
+mvn verify     # 111 tests
 ```
 
 ---
@@ -69,6 +69,7 @@ flowchart TD
 
     subgraph svc["BackendCode.service — business rules"]
         rental["RentalService<br/>book · return · remove"]
+        registry["RegistryService<br/>add · edit · write off"]
         users["UserService<br/>sign in · roles"]
         result["ServiceResult"]
     end
@@ -85,8 +86,10 @@ flowchart TD
     sqlite[("SQLite<br/>rentacar.db")]
 
     screens --> rental
+    screens --> registry
     screens --> users
     rental --> daos
+    registry --> daos
     users --> daos
     screens -.reads.-> domain
     daos --> domain
@@ -95,8 +98,8 @@ flowchart TD
 ```
 
 The rule the layering exists to enforce: **screens do not touch the database, and they
-do not decide business questions.** A screen validates what was typed, calls a service,
-and shows what the service decided. Everything that moves money runs inside one
+do not decide business questions.** A screen validates the individual fields it can
+point at, calls a service, and shows what the service decided. Everything that moves money runs inside one
 transaction.
 
 **Java 21 · Swing · SQLite (JDBC) · Maven · JUnit 5 · JaCoCo · SLF4J + Logback ·
@@ -123,7 +126,7 @@ mistakes I made along the way, because the corrections are the useful part.
 |---|---|---|
 | Storage | 4 files of serialized Java objects | SQLite with foreign keys and constraints |
 | Build | NetBeans Ant, unresolvable classpath | `mvn clean package`, self-contained jar |
-| Tests | none | 85, run on every push |
+| Tests | none | 111, run on every push |
 | Money | 3 loose writes in a button handler | one transaction, committed or rolled back |
 | Errors | printed to a console nobody sees | logged, and reported on screen |
 | Passwords | plaintext literals in the source | BCrypt hashes in the database |
@@ -136,8 +139,8 @@ first — two rentals worth 200 and 400 left the owner with 400. Rows referencin
 id made the whole class of bug impossible rather than patched.
 
 Written from scratch during the rebuild: the persistence layer (`Database`, five DAOs,
-the schema and its migration), the service layer (`RentalService`, `UserService`,
-`ServiceResult`), the reporting and dashboard (`ReportingDao`, `Dashboard`, `BarChart`),
+the schema and its migration), the service layer (`RentalService`, `RegistryService`,
+`UserService`, `ServiceResult`), the reporting and dashboard (`ReportingDao`, `Dashboard`, `BarChart`),
 the table tooling (`TableTools`), the legacy importer (`SerImporter`), the vendored
 layout manager, and the whole test suite.
 
@@ -152,9 +155,6 @@ layout manager, and the whole test suite.
   reported over the model, service and DAO layers, which is what the suite actually
   exercises. The screens were checked by hand.
 - **Single user, single machine.** One SQLite file, one connection, no networking.
-- **Two result conventions.** Screens that call a service read a `ServiceResult`; the
-  Add and Update dialogs still call the model directly and check a boolean through
-  `SaveReport`. They should be one thing.
 
 ---
 

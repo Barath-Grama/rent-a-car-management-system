@@ -337,11 +337,10 @@ Reported as latent rather than active.
 
 - **Date-range reservations.** Bookings are instantaneous — rent now, return now.
   Reserving a car for a future window is the largest gap in the domain model.
-- **One result convention.** Screens calling services read a `ServiceResult`; the Add
-  and Update dialogs still check a boolean through `SaveReport`. Two mechanisms for one
-  job.
-- **Move the remaining screens behind services.** Add and Update still call the model
-  directly, so their validation rules are not unit-testable.
+- **Per-field validation is still in the screens.** Each Add and Update dialog checks
+  CNIC, name and contact formats itself, because a red label beside the offending box
+  needs to know which box that is and a single result cannot say. Worth a validator
+  that reports per field.
 - **Soft-delete instead of cascade.** Deleting an owner erases their cars' rental
   history. Correct for this application, wrong for a real one that needs to keep books.
 - **Some UI tests.** Not full coverage, but the screens are the one layer verified only

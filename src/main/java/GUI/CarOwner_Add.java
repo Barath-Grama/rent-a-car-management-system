@@ -1,6 +1,8 @@
 package GUI;
 
 import BackendCode.CarOwner;
+import BackendCode.service.RegistryService;
+import BackendCode.service.ServiceResult;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -87,35 +89,36 @@ public class CarOwner_Add {
                     String name = Name_TextField.getText().trim();
                     String contact = Contact_TextField.getText().trim();
 
-                    if (CarOwner.isCNICValid(cnic)) {
-                        CarOwner carOwner = CarOwner.SearchByCNIC(cnic);
-                        if (carOwner == null) {
-                            if (CarOwner.isNameValid(name)) {
-                                if (CarOwner.isContactNoValid(contact)) {
-                                    // ID is Auto
-                                    if (!SaveReport.check(new CarOwner(0, 0, cnic, name, contact).Add())) {
-                                        return;
-                                    }
-                                    Parent_JFrame.getMainFrame().getContentPane().removeAll();
-                                    CarOwner_Details cd = new CarOwner_Details();
-                                    Parent_JFrame.getMainFrame().add(cd.getMainPanel());
-                                    Parent_JFrame.getMainFrame().getContentPane().revalidate();
-                                    Parent_JFrame.getMainFrame().getContentPane().repaint();
-                                    Parent_JFrame.getMainFrame().setEnabled(true);
-                                    JOptionPane.showMessageDialog(null, "Car Owner added successfully !");
-                                    frame.dispose();
-                                } else {
-                                    JOptionPane.showMessageDialog(null, "Invalid contact no. !");
-                                }
-                            } else {
-                                JOptionPane.showMessageDialog(null, "Invalid Name !");
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(null, "This CNIC is already registered !");
-                        }
-                    } else {
+//                    Per-field checks stay here: each one names the box that is wrong.
+                    if (!CarOwner.isCNICValid(cnic)) {
                         JOptionPane.showMessageDialog(null, "Invalid CNIC");
+                        break;
                     }
+                    if (!CarOwner.isNameValid(name)) {
+                        JOptionPane.showMessageDialog(null, "Invalid Name !");
+                        break;
+                    }
+                    if (!CarOwner.isContactNoValid(contact)) {
+                        JOptionPane.showMessageDialog(null, "Invalid contact no. !");
+                        break;
+                    }
+//                    Whether the CNIC is already taken, and whether the write landed,
+//                    are the service's to answer. ID is Auto.
+                    ServiceResult result = RegistryService.addCarOwner(
+                            new CarOwner(0, 0, cnic, name, contact));
+                    if (!result.isSuccess()) {
+                        JOptionPane.showMessageDialog(null, result.getMessage(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                        break;
+                    }
+                    Parent_JFrame.getMainFrame().getContentPane().removeAll();
+                    CarOwner_Details cd = new CarOwner_Details();
+                    Parent_JFrame.getMainFrame().add(cd.getMainPanel());
+                    Parent_JFrame.getMainFrame().getContentPane().revalidate();
+                    Parent_JFrame.getMainFrame().getContentPane().repaint();
+                    Parent_JFrame.getMainFrame().setEnabled(true);
+                    JOptionPane.showMessageDialog(null, result.getMessage());
+                    frame.dispose();
                     break;
                 }
                 case "Cancel": {

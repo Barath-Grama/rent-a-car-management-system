@@ -154,6 +154,13 @@ public final class RentalService {
      * @return what happened, with a message for the user
      */
     public static ServiceResult removeOwner(int ownerId) {
+//        Enforced here rather than only in the screen that offers the button, so the
+//        rule holds for any caller and can be tested without opening a window. The
+//        screen asks the same question first, but only to avoid walking someone
+//        through a confirmation it is going to refuse.
+        if (!UserService.currentCanManageAccounts()) {
+            return ServiceResult.failed("Only an administrator can remove a car owner.");
+        }
         CarOwner owner = CarOwnerDao.findById(ownerId);
         if (owner == null) {
             return ServiceResult.failed("This ID does not exist !");
@@ -181,6 +188,10 @@ public final class RentalService {
      * @return what happened, with a message for the user
      */
     public static ServiceResult removeCustomer(int customerId) {
+//        see removeOwner: the rule belongs with the change, not only with the button
+        if (!UserService.currentCanManageAccounts()) {
+            return ServiceResult.failed("Only an administrator can remove a customer.");
+        }
         Customer customer = CustomerDao.findById(customerId);
         if (customer == null) {
             return ServiceResult.failed("This ID does not exist !");

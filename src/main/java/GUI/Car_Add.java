@@ -1,6 +1,8 @@
 package GUI;
 
 import BackendCode.Car;
+import BackendCode.service.RegistryService;
+import BackendCode.service.ServiceResult;
 import BackendCode.CarOwner;
 import java.awt.*;
 import java.awt.event.*;
@@ -244,38 +246,31 @@ public final class Car_Add extends JFrame {
 //Car(id, maker, name, color, Type, seatingCapacity, model, condition, regNo, rentPerHour, carOwner);
                 try {
                     if (maker != null && name != null && regNo != null && ownerID != null && rentPerHour != null) {
-                        CarOwner carOwner = CarOwner.SearchByID(Integer.parseInt(ownerID));
-
-                        Car car = Car.SearchByRegNo(regNo);
-
-                        if (carOwner != null) {
-                            if (car == null) {
-                                //Car(id, Maker, Name, Colour, Type, SeatingCapacity, Model, Condition, RegNo, RentPerHour, carOwner)
-                                // id is auto
-                                car = new Car(0, maker, name, Colour_ComboBox.getSelectedItem() + "",
-                                        Type_ComboBox.getSelectedItem() + "",
-                                        Integer.parseInt(SeatingCapacity_Spinner.getValue().toString()),
-                                        Model_ComboBox.getSelectedItem() + "",
-                                        Condition_ComboBox.getSelectedItem() + "",
-                                        regNo, Integer.parseInt(rentPerHour), carOwner);
-                                if (!SaveReport.check(car.Add())) {
-                                    return;
-                                }
-                                
-                                Parent_JFrame.getMainFrame().getContentPane().removeAll();
-                                Car_Details cd = new Car_Details();
-                                Parent_JFrame.getMainFrame().add(cd.getMainPanel());
-                                Parent_JFrame.getMainFrame().getContentPane().revalidate();
-                                Parent_JFrame.getMainFrame().getContentPane().repaint();
-                                JOptionPane.showMessageDialog(null, "Record Successfully Added !");
-                                Parent_JFrame.getMainFrame().setEnabled(true);
-                                dispose();
-                            } else {
-                                JOptionPane.showMessageDialog(null, "This Car Registeration no is already registered !");
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Owner ID doesnot exists !");
+                        //Car(id, Maker, Name, Colour, Type, SeatingCapacity, Model, Condition, RegNo, RentPerHour, carOwner)
+                        // id is auto
+                        Car car = new Car(0, maker, name, Colour_ComboBox.getSelectedItem() + "",
+                                Type_ComboBox.getSelectedItem() + "",
+                                Integer.parseInt(SeatingCapacity_Spinner.getValue().toString()),
+                                Model_ComboBox.getSelectedItem() + "",
+                                Condition_ComboBox.getSelectedItem() + "",
+                                regNo, Integer.parseInt(rentPerHour),
+                                CarOwner.SearchByID(Integer.parseInt(ownerID)));
+//                        The owner having to exist and the registration having to be
+//                        free are the service's rules, not this window's.
+                        ServiceResult result = RegistryService.addCar(car);
+                        if (!result.isSuccess()) {
+                            JOptionPane.showMessageDialog(null, result.getMessage(),
+                                    "Error", JOptionPane.ERROR_MESSAGE);
+                            return;
                         }
+                        Parent_JFrame.getMainFrame().getContentPane().removeAll();
+                        Car_Details cd = new Car_Details();
+                        Parent_JFrame.getMainFrame().add(cd.getMainPanel());
+                        Parent_JFrame.getMainFrame().getContentPane().revalidate();
+                        Parent_JFrame.getMainFrame().getContentPane().repaint();
+                        JOptionPane.showMessageDialog(null, result.getMessage());
+                        Parent_JFrame.getMainFrame().setEnabled(true);
+                        dispose();
                     }
                 } catch (HeadlessException | NumberFormatException ex) {
                     LOG.error("could not add the car", ex);

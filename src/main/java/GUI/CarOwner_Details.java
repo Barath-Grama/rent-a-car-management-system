@@ -3,6 +3,8 @@ package GUI;
 import BackendCode.service.UserService;
 import BackendCode.Car;
 import BackendCode.CarOwner;
+import BackendCode.service.RegistryService;
+import BackendCode.service.ServiceResult;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -192,8 +194,10 @@ public final class CarOwner_Details implements ActionListener {
                                 + carOwner + "\nAre you sure you want to continue ?", "Clear Balance Confirmation",
                                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null);
                         if (showConfirmDialog == 0) {
-                            carOwner.setBalance(0);
-                            if (!SaveReport.check(carOwner.Update())) {
+                            ServiceResult result = RegistryService.clearBalance(carOwner.getID());
+                            if (!result.isSuccess()) {
+                                JOptionPane.showMessageDialog(null, result.getMessage(),
+                                        "Not permitted", JOptionPane.WARNING_MESSAGE);
                                 return;
                             }
                             Parent_JFrame.getMainFrame().getContentPane().removeAll();
@@ -201,7 +205,7 @@ public final class CarOwner_Details implements ActionListener {
                             Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                             Parent_JFrame.getMainFrame().getContentPane().revalidate();
                             Parent_JFrame.getMainFrame().getContentPane().repaint();
-                            JOptionPane.showMessageDialog(null, "Balance Successfully Cleared !");
+                            JOptionPane.showMessageDialog(null, result.getMessage());
                         }
                     }
                 } else {

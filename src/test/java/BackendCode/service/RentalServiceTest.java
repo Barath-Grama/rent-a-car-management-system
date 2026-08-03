@@ -26,11 +26,16 @@ class RentalServiceTest {
 
     @BeforeEach
     void freshDatabase() {
+        UserService.signOut();
         Database.close();
         new File(Database.fileName()).delete();
         for (String legacy : new String[]{"Customer.ser", "CarOwner.ser", "Car.ser", "Booking.ser"}) {
             new File(legacy).delete();
         }
+//        Removing an owner or a customer is an administrator's action, and the service
+//        enforces that rather than trusting the screen. In the running program somebody
+//        is always signed in, so the fixture signs in too.
+        UserService.signIn("admin", "123".toCharArray());
         new CarOwner(0, 0, "1111111111111", "Owner One", "03001111111").Add();
         new Customer(0, 0, "2222222222222", "Cust One", "03002222222").Add();
         CarOwner owner = CarOwner.SearchByID(1);

@@ -3,6 +3,8 @@ package GUI;
 import BackendCode.service.UserService;
 import BackendCode.Booking;
 import BackendCode.Customer;
+import BackendCode.service.RegistryService;
+import BackendCode.service.ServiceResult;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -215,8 +217,10 @@ public final class Customer_Details implements ActionListener {
                                 + customer + "\nAre you sure you want to continue ?", "Clear Bill Confirmation",
                                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null);
                         if (showConfirmDialog == 0) {
-                            customer.setBill(0);
-                            if (!SaveReport.check(customer.Update())) {
+                            ServiceResult result = RegistryService.clearBill(customer.getID());
+                            if (!result.isSuccess()) {
+                                JOptionPane.showMessageDialog(null, result.getMessage(),
+                                        "Not permitted", JOptionPane.WARNING_MESSAGE);
                                 return;
                             }
                             Parent_JFrame.getMainFrame().getContentPane().removeAll();
@@ -224,7 +228,7 @@ public final class Customer_Details implements ActionListener {
                             Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                             Parent_JFrame.getMainFrame().getContentPane().revalidate();
                             Parent_JFrame.getMainFrame().getContentPane().repaint();
-                            JOptionPane.showMessageDialog(null, "Bill Successfully Cleared !");
+                            JOptionPane.showMessageDialog(null, result.getMessage());
                         }
                     }
                 } else {

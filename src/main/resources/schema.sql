@@ -14,7 +14,11 @@ CREATE TABLE IF NOT EXISTS car_owner (
     cnic        TEXT    NOT NULL UNIQUE,
     name        TEXT    NOT NULL,
     contact_no  TEXT    NOT NULL,
-    balance     INTEGER NOT NULL DEFAULT 0
+    balance     INTEGER NOT NULL DEFAULT 0,
+    -- Records are retired, never erased. Deleting an owner used to cascade their cars
+    -- away and every booking those cars had ever had, which threw away the rental
+    -- history the business is accountable for.
+    deleted     INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS customer (
@@ -22,7 +26,8 @@ CREATE TABLE IF NOT EXISTS customer (
     cnic        TEXT    NOT NULL UNIQUE,
     name        TEXT    NOT NULL,
     contact_no  TEXT    NOT NULL,
-    bill        INTEGER NOT NULL DEFAULT 0
+    bill        INTEGER NOT NULL DEFAULT 0,
+    deleted     INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS car (
@@ -38,7 +43,8 @@ CREATE TABLE IF NOT EXISTS car (
     rent_per_hour     INTEGER NOT NULL,
     -- Removing an owner removes their cars, which is what CarOwner_Remove did by
     -- hand in a loop. The database now does it in one atomic step.
-    owner_id          INTEGER NOT NULL REFERENCES car_owner(id) ON DELETE CASCADE
+    owner_id          INTEGER NOT NULL REFERENCES car_owner(id) ON DELETE CASCADE,
+    deleted           INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS booking (
@@ -66,6 +72,10 @@ CREATE TABLE IF NOT EXISTS app_user (
     role           TEXT NOT NULL CHECK (role IN ('ADMIN', 'STAFF'))
 );
 
+-- Every list filters on this, so it is worth indexing alongside what it is joined to.
+CREATE INDEX IF NOT EXISTS idx_car_live          ON car(deleted);
+CREATE INDEX IF NOT EXISTS idx_customer_live     ON customer(deleted);
+CREATE INDEX IF NOT EXISTS idx_car_owner_live    ON car_owner(deleted);
 CREATE INDEX IF NOT EXISTS idx_car_owner_id      ON car(owner_id);
 CREATE INDEX IF NOT EXISTS idx_booking_customer  ON booking(customer_id);
 CREATE INDEX IF NOT EXISTS idx_booking_car       ON booking(car_id);

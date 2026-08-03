@@ -89,6 +89,29 @@ public final class Database {
      * started from scratch.
      */
     private static void migrate(Connection target) throws SQLException {
+        addAmountCharged(target);
+        addDeletedFlags(target);
+    }
+
+    /**
+     * Records are retired rather than erased, so every table that can be removed from
+     * needs somewhere to say so. Bookings are deliberately excluded: they are the
+     * history being preserved, and nothing deletes one.
+     */
+    private static void addDeletedFlags(Connection target) throws SQLException {
+        for (String table : new String[]{"car_owner", "customer", "car"}) {
+            if (hasColumn(target, table, "deleted")) {
+                continue;
+            }
+            LOG.info("migrating: adding {}.deleted", table);
+            try (Statement statement = target.createStatement()) {
+                statement.execute("ALTER TABLE " + table
+                        + " ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0");
+            }
+        }
+    }
+
+    private static void addAmountCharged(Connection target) throws SQLException {
         if (hasColumn(target, "booking", "amount_charged")) {
             return;
         }

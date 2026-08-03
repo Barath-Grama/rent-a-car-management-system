@@ -29,7 +29,7 @@ public final class CarOwnerDao {
 
     public static ArrayList<CarOwner> findAll() {
         ArrayList<CarOwner> owners = new ArrayList<>();
-        String sql = "SELECT id, cnic, name, contact_no, balance FROM car_owner ORDER BY id";
+        String sql = "SELECT id, cnic, name, contact_no, balance FROM car_owner WHERE deleted = 0 ORDER BY id";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql);
              ResultSet rows = statement.executeQuery()) {
             while (rows.next()) {
@@ -42,7 +42,7 @@ public final class CarOwnerDao {
     }
 
     public static CarOwner findById(int id) {
-        String sql = "SELECT id, cnic, name, contact_no, balance FROM car_owner WHERE id = ?";
+        String sql = "SELECT id, cnic, name, contact_no, balance FROM car_owner WHERE id = ? AND deleted = 0";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
             statement.setInt(1, id);
             try (ResultSet rows = statement.executeQuery()) {
@@ -55,7 +55,7 @@ public final class CarOwnerDao {
     }
 
     public static CarOwner findByCnic(String cnic) {
-        String sql = "SELECT id, cnic, name, contact_no, balance FROM car_owner WHERE cnic = ? COLLATE NOCASE";
+        String sql = "SELECT id, cnic, name, contact_no, balance FROM car_owner WHERE cnic = ? COLLATE NOCASE AND deleted = 0";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
             statement.setString(1, cnic);
             try (ResultSet rows = statement.executeQuery()) {
@@ -70,7 +70,7 @@ public final class CarOwnerDao {
     public static ArrayList<CarOwner> findByName(String name) {
         ArrayList<CarOwner> owners = new ArrayList<>();
         String sql = "SELECT id, cnic, name, contact_no, balance FROM car_owner "
-                + "WHERE name = ? COLLATE NOCASE ORDER BY id";
+                + "WHERE name = ? COLLATE NOCASE AND deleted = 0 ORDER BY id";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
             statement.setString(1, name);
             try (ResultSet rows = statement.executeQuery()) {
@@ -123,17 +123,36 @@ public final class CarOwnerDao {
     }
 
     /**
-     * Deletes the owner. Their cars cascade away, and each car's bookings with them,
-     * which is what CarOwner_Remove used to do by looping over cars by hand.
+     * Retires the owner and, with them, their cars. Nothing is erased: the rows stay
+     * so that every booking those cars were on still names a real car and a real
+     * owner. Both statements run inside the caller's transaction.
      */
     public static boolean delete(int id) {
-        try (PreparedStatement statement = Database.connection()
-                .prepareStatement("DELETE FROM car_owner WHERE id = ?")) {
-            statement.setInt(1, id);
-            return statement.executeUpdate() == 1;
+        try (PreparedStatement cars = Database.connection()
+                .prepareStatement("UPDATE car SET deleted = 1 WHERE owner_id = ?");
+             PreparedStatement owner = Database.connection()
+                .prepareStatement("UPDATE car_owner SET deleted = 1 WHERE id = ?")) {
+            cars.setInt(1, id);
+            cars.executeUpdate();
+            owner.setInt(1, id);
+            return owner.executeUpdate() == 1;
         } catch (SQLException ex) {
-            LOG.error("could not delete a car owner", ex);
+            LOG.error("could not retire a car owner", ex);
             return false;
+        }
+    }
+
+    /** Reads an owner by id whether or not they have been retired, for history. */
+    public static CarOwner findByIdIncludingRetired(int id) {
+        String sql = "SELECT id, cnic, name, contact_no, balance FROM car_owner WHERE id = ?";
+        try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
+            statement.setInt(1, id);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? read(rows) : null;
+            }
+        } catch (SQLException ex) {
+            LOG.error("could not read car owner by id", ex);
+            return null;
         }
     }
 }

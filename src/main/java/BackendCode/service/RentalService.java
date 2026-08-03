@@ -124,8 +124,8 @@ public final class RentalService {
     }
 
     /**
-     * Removes a car, refusing while it is still out. Its booking history goes with it
-     * by cascade.
+     * Retires a car, refusing while it is still out. Its booking history stays: the
+     * rentals happened, and the accounts have to keep showing them.
      *
      * @param carId the car to remove
      * @return what happened, with a message for the user
@@ -146,9 +146,10 @@ public final class RentalService {
     }
 
     /**
-     * Removes an owner and, by cascade, their cars and those cars' bookings. Refuses
-     * while any of their cars is still out, so a rental in progress cannot be deleted
-     * out from under the customer who has the car.
+     * Retires an owner and their cars. Nothing is erased: every booking those cars
+     * were on still names a real car and a real owner. Refuses while any of their cars
+     * is still out, so a rental in progress cannot be retired out from under the
+     * customer holding the car.
      *
      * @param ownerId the owner to remove
      * @return what happened, with a message for the user
@@ -182,7 +183,8 @@ public final class RentalService {
     }
 
     /**
-     * Removes a customer and, by cascade, their bookings.
+     * Retires a customer. Their booking history stays, so what they rented and what
+     * they were charged remains on the books.
      *
      * @param customerId the customer to remove
      * @return what happened, with a message for the user
@@ -195,6 +197,14 @@ public final class RentalService {
         Customer customer = CustomerDao.findById(customerId);
         if (customer == null) {
             return ServiceResult.failed("This ID does not exist !");
+        }
+//        the same rule cars get: somebody holding one of our cars cannot be retired
+        for (Booking booking : BookingDao.findByCustomer(customerId)) {
+            if (booking.getReturnTime() == 0) {
+                return ServiceResult.failed("This customer still has a car out ("
+                        + booking.getCar().getName() + ")."
+                        + "\nTake it back before removing them.");
+            }
         }
         if (!customer.Remove()) {
             return ServiceResult.failed("The customer could not be removed.");

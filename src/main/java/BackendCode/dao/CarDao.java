@@ -33,6 +33,9 @@ public final class CarDao {
           + "       o.contact_no AS owner_contact, o.balance AS owner_balance "
           + "FROM car c JOIN car_owner o ON o.id = c.owner_id ";
 
+    /** Live cars only; retired ones stay in the table for history. */
+    private static final String LIVE = "c.deleted = 0";
+
     private CarDao() {
     }
 
@@ -48,7 +51,7 @@ public final class CarDao {
 
     public static ArrayList<Car> findAll() {
         ArrayList<Car> cars = new ArrayList<>();
-        try (PreparedStatement statement = Database.connection().prepareStatement(SELECT + "ORDER BY c.id");
+        try (PreparedStatement statement = Database.connection().prepareStatement(SELECT + "WHERE " + LIVE + " ORDER BY c.id");
              ResultSet rows = statement.executeQuery()) {
             while (rows.next()) {
                 cars.add(read(rows));
@@ -59,8 +62,21 @@ public final class CarDao {
         return cars;
     }
 
-    public static Car findById(int id) {
+    /** Reads a car by id whether or not it has been retired, for history. */
+    public static Car findByIdIncludingRetired(int id) {
         try (PreparedStatement statement = Database.connection().prepareStatement(SELECT + "WHERE c.id = ?")) {
+            statement.setInt(1, id);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? read(rows) : null;
+            }
+        } catch (SQLException ex) {
+            LOG.error("could not read car by id", ex);
+            return null;
+        }
+    }
+
+    public static Car findById(int id) {
+        try (PreparedStatement statement = Database.connection().prepareStatement(SELECT + "WHERE c.id = ? AND " + LIVE)) {
             statement.setInt(1, id);
             try (ResultSet rows = statement.executeQuery()) {
                 return rows.next() ? read(rows) : null;
@@ -73,7 +89,7 @@ public final class CarDao {
 
     public static Car findByRegNo(String regNo) {
         try (PreparedStatement statement = Database.connection()
-                .prepareStatement(SELECT + "WHERE c.reg_no = ? COLLATE NOCASE")) {
+                .prepareStatement(SELECT + "WHERE c.reg_no = ? COLLATE NOCASE AND " + LIVE)) {
             statement.setString(1, regNo);
             try (ResultSet rows = statement.executeQuery()) {
                 return rows.next() ? read(rows) : null;
@@ -87,7 +103,7 @@ public final class CarDao {
     public static ArrayList<Car> findByName(String name) {
         ArrayList<Car> cars = new ArrayList<>();
         try (PreparedStatement statement = Database.connection()
-                .prepareStatement(SELECT + "WHERE c.name = ? COLLATE NOCASE ORDER BY c.id")) {
+                .prepareStatement(SELECT + "WHERE c.name = ? COLLATE NOCASE AND " + LIVE + " ORDER BY c.id")) {
             statement.setString(1, name);
             try (ResultSet rows = statement.executeQuery()) {
                 while (rows.next()) {
@@ -103,7 +119,7 @@ public final class CarDao {
     public static ArrayList<Car> findByOwner(int ownerId) {
         ArrayList<Car> cars = new ArrayList<>();
         try (PreparedStatement statement = Database.connection()
-                .prepareStatement(SELECT + "WHERE c.owner_id = ? ORDER BY c.id")) {
+                .prepareStatement(SELECT + "WHERE c.owner_id = ? AND " + LIVE + " ORDER BY c.id")) {
             statement.setInt(1, ownerId);
             try (ResultSet rows = statement.executeQuery()) {
                 while (rows.next()) {
@@ -137,7 +153,7 @@ public final class CarDao {
      */
     public static ArrayList<Car> findUnbooked() {
         ArrayList<Car> cars = new ArrayList<>();
-        String sql = SELECT + "WHERE c.id NOT IN "
+        String sql = SELECT + "WHERE " + LIVE + " AND c.id NOT IN "
                 + "(SELECT car_id FROM booking WHERE return_time IS NULL) ORDER BY c.id";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql);
              ResultSet rows = statement.executeQuery()) {
@@ -197,9 +213,12 @@ public final class CarDao {
         statement.setInt(10, car.getCarOwner() == null ? 0 : car.getCarOwner().getID());
     }
 
+    /**
+     * Retires the car. The row stays so the bookings it was on still name a real car.
+     */
     public static boolean delete(int id) {
         try (PreparedStatement statement = Database.connection()
-                .prepareStatement("DELETE FROM car WHERE id = ?")) {
+                .prepareStatement("UPDATE car SET deleted = 1 WHERE id = ?")) {
             statement.setInt(1, id);
             return statement.executeUpdate() == 1;
         } catch (SQLException ex) {

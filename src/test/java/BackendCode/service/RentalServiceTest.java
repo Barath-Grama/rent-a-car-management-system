@@ -129,8 +129,8 @@ class RentalServiceTest {
     }
 
     @Test
-    @DisplayName("removing a free car takes its booking history with it")
-    void removeCarCascadesHistory() {
+    @DisplayName("retiring a car keeps its booking history and the booking still names it")
+    void removeCarKeepsHistory() {
         RentalService.bookCar(1, 1);
         backdateHours(1);
         RentalService.returnCar(1);
@@ -138,8 +138,12 @@ class RentalServiceTest {
 
         assertTrue(RentalService.removeCar(1).isSuccess());
 
-        assertNull(Car.SearchByID(1));
-        assertEquals(0, Booking.View().size(), "the finished booking should have cascaded away");
+        // The car is gone from every list the program shows...
+        assertNull(Car.SearchByID(1), "a retired car should not appear in the fleet");
+        // ...but the rental happened, was charged for, and stays on the books.
+        assertEquals(1, Booking.View().size(), "the finished booking must survive");
+        assertEquals("Corolla", Booking.View().get(0).getCar().getName(),
+                "and it must still be able to name the car it was for");
     }
 
     @Test
@@ -165,16 +169,46 @@ class RentalServiceTest {
     }
 
     @Test
-    @DisplayName("removing a customer takes their bookings with them")
-    void removeCustomerCascadesBookings() {
+    @DisplayName("retiring a customer keeps their bookings, which still name them")
+    void removeCustomerKeepsHistory() {
         RentalService.bookCar(1, 1);
-        RentalService.bookCar(2, 1);
+        backdateHours(1);
+        RentalService.returnCar(1);
 
         assertTrue(RentalService.removeCustomer(1).isSuccess());
 
-        assertNull(Customer.SearchByID(1));
-        assertEquals(0, Booking.View().size());
-        assertEquals(2, Car.View().size(), "the cars themselves stay");
+        assertNull(Customer.SearchByID(1), "a retired customer should not appear in lists");
+        assertEquals(1, Booking.View().size(), "what they rented stays on the books");
+        assertEquals("Cust One", Booking.View().get(0).getCustomer().getName());
+        assertEquals(2, Car.View().size(), "the cars are untouched");
+    }
+
+    @Test
+    @DisplayName("a customer still holding a car cannot be retired")
+    void removeCustomerRefusedWhileACarIsOut() {
+        RentalService.bookCar(1, 1);
+
+        ServiceResult result = RentalService.removeCustomer(1);
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getMessage().contains("Corolla"), "should name the car they have");
+        assertNotNull(Customer.SearchByID(1));
+    }
+
+    @Test
+    @DisplayName("retiring an owner retires their cars but keeps the bookings")
+    void removeOwnerKeepsHistory() {
+        RentalService.bookCar(1, 1);
+        backdateHours(1);
+        RentalService.returnCar(1);
+
+        assertTrue(RentalService.removeOwner(1).isSuccess());
+
+        assertNull(CarOwner.SearchByID(1));
+        assertEquals(0, Car.View().size(), "their cars leave the fleet");
+        assertEquals(1, Booking.View().size(), "the rental still happened");
+        assertEquals("Owner One", Booking.View().get(0).getCar().getCarOwner().getName(),
+                "and the booking can still name who owned the car");
     }
 
     /**

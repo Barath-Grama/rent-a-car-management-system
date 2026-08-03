@@ -26,26 +26,8 @@ public final class CustomerDao {
     private CustomerDao() {
     }
 
-    private static Customer read(ResultSet rows) throws SQLException {
-        return new Customer(rows.getInt("bill"), rows.getInt("id"),
-                rows.getString("cnic"), rows.getString("name"), rows.getString("contact_no"));
-    }
-
-    public static ArrayList<Customer> findAll() {
-        ArrayList<Customer> customers = new ArrayList<>();
-        String sql = "SELECT id, cnic, name, contact_no, bill FROM customer ORDER BY id";
-        try (PreparedStatement statement = Database.connection().prepareStatement(sql);
-             ResultSet rows = statement.executeQuery()) {
-            while (rows.next()) {
-                customers.add(read(rows));
-            }
-        } catch (SQLException ex) {
-            LOG.error("could not list customers", ex);
-        }
-        return customers;
-    }
-
-    public static Customer findById(int id) {
+    /** Reads a customer by id whether or not it has been retired, for history. */
+    public static Customer findByIdIncludingRetired(int id) {
         String sql = "SELECT id, cnic, name, contact_no, bill FROM customer WHERE id = ?";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
             statement.setInt(1, id);
@@ -58,8 +40,40 @@ public final class CustomerDao {
         }
     }
 
+    private static Customer read(ResultSet rows) throws SQLException {
+        return new Customer(rows.getInt("bill"), rows.getInt("id"),
+                rows.getString("cnic"), rows.getString("name"), rows.getString("contact_no"));
+    }
+
+    public static ArrayList<Customer> findAll() {
+        ArrayList<Customer> customers = new ArrayList<>();
+        String sql = "SELECT id, cnic, name, contact_no, bill FROM customer WHERE deleted = 0 ORDER BY id";
+        try (PreparedStatement statement = Database.connection().prepareStatement(sql);
+             ResultSet rows = statement.executeQuery()) {
+            while (rows.next()) {
+                customers.add(read(rows));
+            }
+        } catch (SQLException ex) {
+            LOG.error("could not list customers", ex);
+        }
+        return customers;
+    }
+
+    public static Customer findById(int id) {
+        String sql = "SELECT id, cnic, name, contact_no, bill FROM customer WHERE id = ? AND deleted = 0";
+        try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
+            statement.setInt(1, id);
+            try (ResultSet rows = statement.executeQuery()) {
+                return rows.next() ? read(rows) : null;
+            }
+        } catch (SQLException ex) {
+            LOG.error("could not read customer by id", ex);
+            return null;
+        }
+    }
+
     public static Customer findByCnic(String cnic) {
-        String sql = "SELECT id, cnic, name, contact_no, bill FROM customer WHERE cnic = ? COLLATE NOCASE";
+        String sql = "SELECT id, cnic, name, contact_no, bill FROM customer WHERE cnic = ? COLLATE NOCASE AND deleted = 0";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
             statement.setString(1, cnic);
             try (ResultSet rows = statement.executeQuery()) {
@@ -74,7 +88,7 @@ public final class CustomerDao {
     public static ArrayList<Customer> findByName(String name) {
         ArrayList<Customer> customers = new ArrayList<>();
         String sql = "SELECT id, cnic, name, contact_no, bill FROM customer "
-                + "WHERE name = ? COLLATE NOCASE ORDER BY id";
+                + "WHERE name = ? COLLATE NOCASE AND deleted = 0 ORDER BY id";
         try (PreparedStatement statement = Database.connection().prepareStatement(sql)) {
             statement.setString(1, name);
             try (ResultSet rows = statement.executeQuery()) {
@@ -134,12 +148,12 @@ public final class CustomerDao {
     }
 
     /**
-     * Deletes the customer. Their bookings go with them through {@code ON DELETE
-     * CASCADE}, in one atomic step rather than the hand-written loop this replaces.
+     * Retires the customer. The row stays so their rental history keeps its meaning;
+     * every read filters retired records out, so they disappear from the program.
      */
     public static boolean delete(int id) {
         try (PreparedStatement statement = Database.connection()
-                .prepareStatement("DELETE FROM customer WHERE id = ?")) {
+                .prepareStatement("UPDATE customer SET deleted = 1 WHERE id = ?")) {
             statement.setInt(1, id);
             return statement.executeUpdate() == 1;
         } catch (SQLException ex) {

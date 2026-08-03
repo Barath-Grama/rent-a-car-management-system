@@ -43,8 +43,11 @@ public final class BookingDao {
         if (rows.wasNull()) {
             returnTime = 0;
         }
-        Customer customer = CustomerDao.findById(rows.getInt("customer_id"));
-        Car car = CarDao.findById(rows.getInt("car_id"));
+//        Deliberately the retired-inclusive lookups: a booking from last year still
+//        has to name the customer who made it and the car they took, even after both
+//        have been retired. This is the whole point of retiring rather than erasing.
+        Customer customer = CustomerDao.findByIdIncludingRetired(rows.getInt("customer_id"));
+        Car car = CarDao.findByIdIncludingRetired(rows.getInt("car_id"));
         Booking booking = new Booking(rows.getInt("id"), customer, car, rows.getLong("rent_time"), returnTime);
         int charged = rows.getInt("amount_charged");
         booking.setAmountCharged(rows.wasNull() ? null : charged);
@@ -99,7 +102,7 @@ public final class BookingDao {
         try (PreparedStatement statement = Database.connection().prepareStatement(sql);
              ResultSet rows = statement.executeQuery()) {
             while (rows.next()) {
-                Car car = CarDao.findById(rows.getInt("car_id"));
+                Car car = CarDao.findByIdIncludingRetired(rows.getInt("car_id"));
                 if (car != null) {
                     cars.add(car);
                 }

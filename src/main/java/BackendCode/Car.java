@@ -127,7 +127,11 @@ public class Car implements Serializable {
 
     @Override
     public String toString() {
-        return "Car_new{" + "ID=" + ID + ", Maker=" + Maker + ", Name=" + Name + ", Colour=" + Colour + ", \nType=" + Type + ", SeatingCapacity=" + SeatingCapacity + ", Model=" + Model + ", Condition=" + Condition + ", RegNo=" + RegNo + ", RentPerHour=" + RentPerHour + ", \ncarOwner=" + carOwner.toString() + '}' + "\n";
+//        String.valueOf rather than carOwner.toString(): a Car built with the no-arg
+//        constructor has no owner, and this string goes straight into the confirmation
+//        dialogs shown before booking and removal. Reading "carOwner=null" tells you
+//        what is wrong; a NullPointerException out of a toString tells you nothing.
+        return "Car_new{" + "ID=" + ID + ", Maker=" + Maker + ", Name=" + Name + ", Colour=" + Colour + ", \nType=" + Type + ", SeatingCapacity=" + SeatingCapacity + ", Model=" + Model + ", Condition=" + Condition + ", RegNo=" + RegNo + ", RentPerHour=" + RentPerHour + ", \ncarOwner=" + String.valueOf(carOwner) + '}' + "\n";
     }
 
     /**

@@ -22,17 +22,24 @@ public class Booking implements Serializable {
     private long RentTime, ReturnTime; // stores System time when the Book() method is called
 
     /**
-     * What was actually charged when the car came back, 0 while it is still out.
+     * What was actually charged when the car came back, or null while it is still out.
      * <p>
      * Recorded rather than recomputed: rent_per_hour is editable, so working the
      * figure out from the car's current rate would rewrite past takings every time
      * somebody adjusted a price.
      * <p>
+     * Nullable, not 0-for-absent. A sentinel value that is also a legitimate reading is
+     * the mistake {@code ReturnTime} makes -- 0 is a real epoch millisecond, which is
+     * why "still out" and "returned in 1970" are the same value there. Zero happens not
+     * to be a reachable charge today, because every rental bills at least one hour at a
+     * rate validated above zero, but that is a coincidence of the current rules rather
+     * than something the type guarantees.
+     * <p>
      * Adding this field does not stop {@link SerImporter} reading the old .ser files.
      * That is precisely what pinning {@code serialVersionUID} buys: the stream has no
-     * value for it and deserialization leaves it at 0.
+     * value for it and deserialization leaves it null.
      */
-    private int amountCharged;
+    private Integer amountCharged;
 
     public Booking() {
     }
@@ -77,11 +84,14 @@ public class Booking implements Serializable {
         this.RentTime = RentTime;
     }
 
-    public int getAmountCharged() {
+    /**
+     * @return what this booking charged, or null if the car has not come back
+     */
+    public Integer getAmountCharged() {
         return amountCharged;
     }
 
-    public void setAmountCharged(int amountCharged) {
+    public void setAmountCharged(Integer amountCharged) {
         this.amountCharged = amountCharged;
     }
 
@@ -95,7 +105,10 @@ public class Booking implements Serializable {
 
     @Override
     public String toString() {
-        return "Booking{" + "ID=" + ID + ", \ncustomer=" + customer.toString() + ", \ncar=" + car.toString() + ", \nRentTime=" + RentTime + ", ReturnTime=" + ReturnTime + '}' + "\n";
+//        String.valueOf rather than customer.toString(): a Booking built with the
+//        no-arg constructor has neither, and a toString that throws is worse than one
+//        that prints null. See Car#toString.
+        return "Booking{" + "ID=" + ID + ", \ncustomer=" + String.valueOf(customer) + ", \ncar=" + String.valueOf(car) + ", \nRentTime=" + RentTime + ", ReturnTime=" + ReturnTime + '}' + "\n";
     }
 
     /**

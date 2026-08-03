@@ -46,7 +46,8 @@ public final class BookingDao {
         Customer customer = CustomerDao.findById(rows.getInt("customer_id"));
         Car car = CarDao.findById(rows.getInt("car_id"));
         Booking booking = new Booking(rows.getInt("id"), customer, car, rows.getLong("rent_time"), returnTime);
-        booking.setAmountCharged(rows.getInt("amount_charged"));
+        int charged = rows.getInt("amount_charged");
+        booking.setAmountCharged(rows.wasNull() ? null : charged);
         return booking;
     }
 
@@ -150,7 +151,7 @@ public final class BookingDao {
         } else {
             statement.setLong(4, booking.getReturnTime());
         }
-        if (booking.getAmountCharged() == 0) {
+        if (booking.getAmountCharged() == null) {
 //            nothing charged until the car is back
             statement.setNull(5, Types.INTEGER);
         } else {

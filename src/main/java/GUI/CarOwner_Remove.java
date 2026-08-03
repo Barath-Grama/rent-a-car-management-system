@@ -64,16 +64,15 @@ public class CarOwner_Remove {
                     if (CarOwner.isIDvalid(id)) {
                         CarOwner carOwner = CarOwner.SearchByID(Integer.parseInt(id));
                         if (carOwner != null) {
-                            int showConfirmDialog = JOptionPane.showConfirmDialog(frame, "You are about to remove the following Car Owner.\n"+carOwner.toString()+"\nAll the data including Cars and Balance for this car owner will also be deleted  !"
-                                    + "\n Are you sure you want to continue ??", "Remove Car Owner", JOptionPane.OK_CANCEL_OPTION);
-                            if (showConfirmDialog == 0) {
+                            boolean showConfirmDialog = Dialogs.get().confirm(frame, "You are about to remove the following Car Owner.\n"+carOwner.toString()+"\nAll the data including Cars and Balance for this car owner will also be deleted  !"
+                                    + "\n Are you sure you want to continue ??", "Remove Car Owner");
+                            if (showConfirmDialog) {
 //                                Whether an owner may go, and what goes with them, is
 //                                the service's call; it refuses while any of their cars
 //                                is still out.
                                 ServiceResult result = RentalService.removeOwner(carOwner.getID());
                                 if (!result.isSuccess()) {
-                                    JOptionPane.showMessageDialog(null, result.getMessage(),
-                                            "Error", JOptionPane.ERROR_MESSAGE);
+                                    Dialogs.get().error(null, result.getMessage());
                                     frame.setEnabled(true);
                                     return;
                                 }
@@ -82,7 +81,7 @@ public class CarOwner_Remove {
                                 Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                                 Parent_JFrame.getMainFrame().getContentPane().revalidate();
                                 Parent_JFrame.getMainFrame().getContentPane().repaint();
-                                JOptionPane.showMessageDialog(null, result.getMessage());
+                                Dialogs.get().info(null, result.getMessage());
                                 Parent_JFrame.getMainFrame().setEnabled(true);
                                 frame.dispose();
                             } else {
@@ -91,10 +90,10 @@ public class CarOwner_Remove {
                             }
 
                         } else {
-                            JOptionPane.showMessageDialog(null, "This ID does not exists !");
+                            Dialogs.get().info(null, "This ID does not exists !");
                         }
                     } else {
-                        JOptionPane.showMessageDialog(null, "Enter a valid ID !\n(A valid ID is an integer number greater than 0)");
+                        Dialogs.get().info(null, "Enter a valid ID !\n(A valid ID is an integer number greater than 0)");
                     }
                     break;
                 }

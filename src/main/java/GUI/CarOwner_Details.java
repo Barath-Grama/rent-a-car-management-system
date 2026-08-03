@@ -147,9 +147,7 @@ public final class CarOwner_Details implements ActionListener {
             break;
             case "Remove": {
                 if (!UserService.currentCanManageAccounts()) {
-                    JOptionPane.showMessageDialog(null,
-                            "Only an administrator can remove a car owner.",
-                            "Not permitted", JOptionPane.WARNING_MESSAGE);
+                    Dialogs.get().notPermitted(null, "Only an administrator can remove a car owner.");
                     break;
                 }
                 Parent_JFrame.getMainFrame().setEnabled(false);
@@ -165,9 +163,7 @@ public final class CarOwner_Details implements ActionListener {
 
             case "Clear Balance": {
                 if (!UserService.currentCanManageAccounts()) {
-                    JOptionPane.showMessageDialog(null,
-                            "Only an administrator can clear a car owner's balance.",
-                            "Not permitted", JOptionPane.WARNING_MESSAGE);
+                    Dialogs.get().notPermitted(null, "Only an administrator can clear a car owner's balance.");
                     break;
                 }
 //                Creating an array that contains IDs of all CarOwners
@@ -181,23 +177,20 @@ public final class CarOwner_Details implements ActionListener {
                     }
 
                     if (IDsArray.isEmpty()) {
-                        JOptionPane.showMessageDialog(null, "No Car Owner has a balance to clear !");
+                        Dialogs.get().info(null, "No Car Owner has a balance to clear !");
                         break;
                     }
-                    Object showInputDialog = JOptionPane.showInputDialog(null, "Select ID for Car Owner whose balance you want to clear.",
-                            "Clear Balance", JOptionPane.PLAIN_MESSAGE, null, IDsArray.toArray(), null);
+                    Object showInputDialog = Dialogs.get().choose(null, "Select ID for Car Owner whose balance you want to clear.", "Clear Balance", IDsArray.toArray());
 
                     if (showInputDialog != null) {
                         CarOwner carOwner = CarOwner.SearchByID(Integer.parseInt(showInputDialog + ""));
 
-                        int showConfirmDialog = JOptionPane.showConfirmDialog(null, "You are about to clear the balance for the following Car Owner\n"
-                                + carOwner + "\nAre you sure you want to continue ?", "Clear Balance Confirmation",
-                                JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null);
-                        if (showConfirmDialog == 0) {
+                        boolean showConfirmDialog = Dialogs.get().confirm(null, "You are about to clear the balance for the following Car Owner\n"
+                                + carOwner + "\nAre you sure you want to continue ?", "Clear Balance Confirmation");
+                        if (showConfirmDialog) {
                             ServiceResult result = RegistryService.clearBalance(carOwner.getID());
                             if (!result.isSuccess()) {
-                                JOptionPane.showMessageDialog(null, result.getMessage(),
-                                        "Not permitted", JOptionPane.WARNING_MESSAGE);
+                                Dialogs.get().notPermitted(null, result.getMessage());
                                 return;
                             }
                             Parent_JFrame.getMainFrame().getContentPane().removeAll();
@@ -205,11 +198,11 @@ public final class CarOwner_Details implements ActionListener {
                             Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                             Parent_JFrame.getMainFrame().getContentPane().revalidate();
                             Parent_JFrame.getMainFrame().getContentPane().repaint();
-                            JOptionPane.showMessageDialog(null, result.getMessage());
+                            Dialogs.get().info(null, result.getMessage());
                         }
                     }
                 } else {
-                    JOptionPane.showMessageDialog(null, "No Car Owner is registered !");
+                    Dialogs.get().info(null, "No Car Owner is registered !");
                 }
             }
             break;

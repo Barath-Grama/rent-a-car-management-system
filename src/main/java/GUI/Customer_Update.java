@@ -66,7 +66,7 @@ public class Customer_Update {
                             frame.dispose();
                             new UpdateCustomer_Inner().setVisible(true);
                         } else {
-                            JOptionPane.showMessageDialog(null, "Required ID is not found !");
+                            Dialogs.get().info(null, "Required ID is not found !");
                         }
                     } else {
                         IDValidity_Label.setText("Invalid ID !");
@@ -167,8 +167,7 @@ public class Customer_Update {
                         customer = new Customer(customer.getBill(), customer.getID(), cnic, name, contact);
                         ServiceResult result = RegistryService.updateCustomer(customer);
                         if (!result.isSuccess()) {
-                            JOptionPane.showMessageDialog(null, result.getMessage(),
-                                    "Error", JOptionPane.ERROR_MESSAGE);
+                            Dialogs.get().error(null, result.getMessage());
                             return;
                         }
                         Parent_JFrame.getMainFrame().getContentPane().removeAll();
@@ -176,7 +175,7 @@ public class Customer_Update {
                         Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                         Parent_JFrame.getMainFrame().getContentPane().revalidate();
                         Parent_JFrame.getMainFrame().getContentPane().repaint();
-                        JOptionPane.showMessageDialog(null, result.getMessage());
+                        Dialogs.get().info(null, result.getMessage());
                         Parent_JFrame.getMainFrame().setEnabled(true);
                         dispose();
                     }

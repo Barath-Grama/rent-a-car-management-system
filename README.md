@@ -3,12 +3,12 @@
 [![build](../../actions/workflows/build.yml/badge.svg)](../../actions/workflows/build.yml)
 ![Java](https://img.shields.io/badge/Java-21-orange)
 ![SQLite](https://img.shields.io/badge/SQLite-3-blue)
-![tests](https://img.shields.io/badge/tests-111%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-160%20passing-brightgreen)
 ![coverage](https://img.shields.io/badge/coverage-80%25%20instruction-brightgreen)
 
 A Java desktop application for running a car rental business: the fleet, the owners who
 supply it, the customers who rent from it, and the money that moves between them.
-SQLite behind a DAO and service layer, 111 tests, CI on every push.
+SQLite behind a DAO and service layer, 160 tests including the Swing screens, CI on every push.
 
 ![Dashboard](docs/dashboard.png)
 
@@ -29,7 +29,7 @@ empty database. Change it before anyone else can reach the machine. Data lands i
 `rentacar.db` in the working directory.
 
 ```bash
-mvn verify     # 111 tests
+mvn verify     # 160 tests
 ```
 
 ---
@@ -39,7 +39,7 @@ mvn verify     # 111 tests
 | | |
 |---|---|
 | **Fleet, owners, customers** | Add, edit and remove records, with the constraints enforced by the database rather than by hand |
-| **Booking** | Rent a car out, take it back, and have the bill charged and the owner credited in one transaction |
+| **Booking** | Rent a car out or reserve it for a date range, take it back, and have the bill charged and the owner credited in one transaction |
 | **Dashboard** | Revenue by month, top earning cars, top customers, fleet utilisation — all from aggregate SQL |
 | **Filter and sort** | Every list narrows as you type and sorts on any column |
 | **CSV export** | Writes exactly what you are looking at: the filtered rows, in the sorted order |
@@ -64,14 +64,15 @@ mvn verify     # 111 tests
 flowchart TD
     subgraph ui["GUI — Swing screens"]
         screens["Details screens<br/>Add / Update / Remove dialogs<br/>Dashboard"]
-        tools["TableTools · BarChart · Images"]
+        tools["TableTools · BarChart · Images · Dialogs"]
     end
 
     subgraph svc["BackendCode.service — business rules"]
-        rental["RentalService<br/>book · return · remove"]
+        rental["RentalService<br/>reserve · collect · return · retire"]
         registry["RegistryService<br/>add · edit · write off"]
         users["UserService<br/>sign in · roles"]
-        result["ServiceResult"]
+        valid["RecordValidator<br/>field-by-field checks"]
+        result["ServiceResult · ValidationResult"]
     end
 
     subgraph model["BackendCode — domain"]
@@ -126,7 +127,7 @@ mistakes I made along the way, because the corrections are the useful part.
 |---|---|---|
 | Storage | 4 files of serialized Java objects | SQLite with foreign keys and constraints |
 | Build | NetBeans Ant, unresolvable classpath | `mvn clean package`, self-contained jar |
-| Tests | none | 111, run on every push |
+| Tests | none | 160, run on every push |
 | Money | 3 loose writes in a button handler | one transaction, committed or rolled back |
 | Errors | printed to a console nobody sees | logged, and reported on screen |
 | Passwords | plaintext literals in the source | BCrypt hashes in the database |
@@ -141,20 +142,23 @@ id made the whole class of bug impossible rather than patched.
 Written from scratch during the rebuild: the persistence layer (`Database`, five DAOs,
 the schema and its migration), the service layer (`RentalService`, `RegistryService`,
 `UserService`, `ServiceResult`), the reporting and dashboard (`ReportingDao`, `Dashboard`, `BarChart`),
-the table tooling (`TableTools`), the legacy importer (`SerImporter`), the vendored
-layout manager, and the whole test suite.
+the table tooling (`TableTools`), the dialog seam (`Dialogs`), the validator
+(`RecordValidator`), the legacy importer (`SerImporter`), the vendored layout manager,
+and the whole test suite.
 
 ---
 
 ## Known limitations
 
-- **Bookings are instant, not scheduled.** You rent a car now and return it now; there
-  is no reserving one for next Tuesday. That is the largest gap in the domain model.
-- **The Swing screens have no automated tests.** They are about 4,000 of the 6,700 lines
-  here. Driving them would need a UI-testing library for little return, so coverage is
-  reported over the model, service and DAO layers, which is what the suite actually
-  exercises. The screens were checked by hand.
 - **Single user, single machine.** One SQLite file, one connection, no networking.
+- **Reservations do not expire.** A window nobody collects stays on the car forever and
+  keeps blocking overlapping bookings. A real system would release it.
+- **Retired records keep their CNIC and registration**, so those values cannot be reused.
+  That is the right default -- the person still exists, you have stopped dealing with
+  them -- but it is a decision, not an accident.
+- **Coverage excludes the Swing screens** even though they are now tested: the screen
+  tests cover wiring and behaviour, not every painted pixel, and counting ~4,000 lines
+  of layout code would flatter the number.
 
 ---
 

@@ -201,8 +201,7 @@ public final class Car_Add extends JFrame {
 //                        free are the service's rules, not this window's.
                         ServiceResult result = RegistryService.addCar(car);
                         if (!result.isSuccess()) {
-                            JOptionPane.showMessageDialog(null, result.getMessage(),
-                                    "Error", JOptionPane.ERROR_MESSAGE);
+                            Dialogs.get().error(null, result.getMessage());
                             return;
                         }
                         Parent_JFrame.getMainFrame().getContentPane().removeAll();
@@ -210,14 +209,13 @@ public final class Car_Add extends JFrame {
                         Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                         Parent_JFrame.getMainFrame().getContentPane().revalidate();
                         Parent_JFrame.getMainFrame().getContentPane().repaint();
-                        JOptionPane.showMessageDialog(null, result.getMessage());
+                        Dialogs.get().info(null, result.getMessage());
                         Parent_JFrame.getMainFrame().setEnabled(true);
                         dispose();
                     }
                 } catch (HeadlessException | NumberFormatException ex) {
                     LOG.error("could not add the car", ex);
-                    JOptionPane.showMessageDialog(null, "The record could not be saved :\n" + ex,
-                            "Error", JOptionPane.ERROR_MESSAGE);
+                    Dialogs.get().error(null, "The record could not be saved :\n" + ex);
                 }
             }
         }

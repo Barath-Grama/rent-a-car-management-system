@@ -76,11 +76,11 @@ public final class Booking_UnBookCar extends JFrame {
                                     CarIDValidity_Label.setText("");
                                 } else {
                                     car = null;
-                                    JOptionPane.showMessageDialog(null, "This car is not booked !");
+                                    Dialogs.get().info(null, "This car is not booked !");
                                 }
                             } else {
                                 car = null;
-                                JOptionPane.showMessageDialog(null, "Car ID does not exists !");
+                                Dialogs.get().info(null, "Car ID does not exists !");
                             }
                         } else {
                             carID = null;
@@ -100,16 +100,15 @@ public final class Booking_UnBookCar extends JFrame {
 
                 if (carID != null && car != null) {
                     setEnabled(false);
-                    int showConfirmDialog = JOptionPane.showConfirmDialog(null, "You are about to UnBook this Car\n" + car.toString()
-                            + "\n Are you sure you want to continue ??", "UnBook Confirmation", OK_CANCEL_OPTION);
-                    if (showConfirmDialog == 0) {
+                    boolean showConfirmDialog = Dialogs.get().confirm(null, "You are about to UnBook this Car\n" + car.toString()
+                            + "\n Are you sure you want to continue ??", "UnBook Confirmation");
+                    if (showConfirmDialog) {
 //                        Closing the booking, crediting the owner and charging the
 //                        customer are one transaction inside the service. This window
 //                        only reports what it decided.
                         ServiceResult result = RentalService.returnCar(car.getID());
                         if (!result.isSuccess()) {
-                            JOptionPane.showMessageDialog(null, result.getMessage(),
-                                    "Error", JOptionPane.ERROR_MESSAGE);
+                            Dialogs.get().error(null, result.getMessage());
                             setEnabled(true);
                             return;
                         }
@@ -119,7 +118,7 @@ public final class Booking_UnBookCar extends JFrame {
                         Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                         Parent_JFrame.getMainFrame().getContentPane().revalidate();
                         Parent_JFrame.getMainFrame().getContentPane().repaint();
-                        JOptionPane.showMessageDialog(null, result.getMessage());
+                        Dialogs.get().info(null, result.getMessage());
                         Parent_JFrame.getMainFrame().setEnabled(true);
                         dispose();
                     } else {

@@ -113,7 +113,7 @@ public final class Booking_BookCar extends JFrame {
                                 } else {
                                     car = null;
                                     CarID = null; // stops the confirmation below from using the null car
-                                    JOptionPane.showMessageDialog(null, "This car is already booked !");
+                                    Dialogs.get().info(null, "This car is already booked !");
                                 }
                             } else {
                                 CarID = null;
@@ -142,7 +142,7 @@ public final class Booking_BookCar extends JFrame {
                                 CustomerIDValidity_Label.setText("");
                             } else {
                                 customerID = null;
-                                JOptionPane.showMessageDialog(null, "Customer ID does not exists !");
+                                Dialogs.get().info(null, "Customer ID does not exists !");
                             }
                         } else {
                             customerID = null;
@@ -166,18 +166,15 @@ public final class Booking_BookCar extends JFrame {
 
                 if (CarID != null && customerID != null) {
                     setEnabled(false);
-                    int showConfirmDialog = JOptionPane.showConfirmDialog(null,
-                            "You are about to Book the Car: \n" + car.toString() + "\n against the Customer: \n"
-                            + customer.toString() + "\n Are you sure you want to continue??",
-                            "Book Confirmation", JOptionPane.OK_CANCEL_OPTION);
-                    if (showConfirmDialog == 0) {
+                    boolean showConfirmDialog = Dialogs.get().confirm(null, "You are about to Book the Car: \n" + car.toString() + "\n against the Customer: \n"
+                            + customer.toString() + "\n Are you sure you want to continue??", "Book Confirmation");
+                    if (showConfirmDialog) {
                         ServiceResult result = window == null
                                 ? RentalService.bookCar(car.getID(), customer.getID())
                                 : RentalService.reserve(car.getID(), customer.getID(),
                                         window[0], window[1]);
                         if (!result.isSuccess()) {
-                            JOptionPane.showMessageDialog(null, result.getMessage(),
-                                    "Error", JOptionPane.ERROR_MESSAGE);
+                            Dialogs.get().error(null, result.getMessage());
                             setEnabled(true);
                             return;
                         }
@@ -186,7 +183,7 @@ public final class Booking_BookCar extends JFrame {
                         Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                         Parent_JFrame.getMainFrame().getContentPane().revalidate();
                         Parent_JFrame.getMainFrame().getContentPane().repaint();
-                        JOptionPane.showMessageDialog(null, result.getMessage());
+                        Dialogs.get().info(null, result.getMessage());
                         Parent_JFrame.getMainFrame().setEnabled(true);
                         dispose();
                     } else {

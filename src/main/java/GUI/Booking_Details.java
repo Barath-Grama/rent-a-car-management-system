@@ -16,7 +16,6 @@ import java.util.Date;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -184,7 +183,7 @@ public final class Booking_Details {
                         Booking_BookCar ac = new Booking_BookCar();
                         ac.setVisible(true);
                     } else {
-                        JOptionPane.showMessageDialog(null, "No UnBooked Cars are available !");
+                        Dialogs.get().info(null, "No UnBooked Cars are available !");
                     }
                 }
                 break;
@@ -194,7 +193,7 @@ public final class Booking_Details {
                         Booking_UnBookCar ac = new Booking_UnBookCar();
                         ac.setVisible(true);
                     } else {
-                        JOptionPane.showMessageDialog(null, "No Booked Cars found !");
+                        Dialogs.get().info(null, "No Booked Cars found !");
                     }
                 }
                 break;

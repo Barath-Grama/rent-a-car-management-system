@@ -99,7 +99,7 @@ public final class Car_Update extends JFrame {
                         dispose();
 
                     } else {
-                        JOptionPane.showMessageDialog(null, "Car ID not found !");
+                        Dialogs.get().info(null, "Car ID not found !");
                     }
                 } else {
                     CarIDValidity_Label.setText("                                                            Enter Car ID !");
@@ -304,8 +304,7 @@ public final class Car_Update extends JFrame {
                                     RegNo, Integer.parseInt(RentPerHour), carOwner);
                             ServiceResult result = RegistryService.updateCar(car);
                             if (!result.isSuccess()) {
-                                JOptionPane.showMessageDialog(null, result.getMessage(),
-                                        "Error", JOptionPane.ERROR_MESSAGE);
+                                Dialogs.get().error(null, result.getMessage());
                                 return;
                             }
 
@@ -315,7 +314,7 @@ public final class Car_Update extends JFrame {
                             Parent_JFrame.getMainFrame().getContentPane().revalidate();
                             Parent_JFrame.getMainFrame().getContentPane().repaint();
 
-                            JOptionPane.showMessageDialog(null, result.getMessage());
+                            Dialogs.get().info(null, result.getMessage());
 
                             Parent_JFrame.getMainFrame().setEnabled(true);
                             dispose();
@@ -323,8 +322,7 @@ public final class Car_Update extends JFrame {
                         }
                     } catch (HeadlessException | NumberFormatException ex) {
                         LOG.error("could not update the car", ex);
-                        JOptionPane.showMessageDialog(null, "The record could not be saved :\n" + ex,
-                                "Error", JOptionPane.ERROR_MESSAGE);
+                        Dialogs.get().error(null, "The record could not be saved :\n" + ex);
                     }
                 }
             }

@@ -14,7 +14,6 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,9 +43,9 @@ public class Parent_JFrame {
         MainFrame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                int showConfirmDialog = JOptionPane.showConfirmDialog(null, "You are about to terminate the program.\n"
-                        + " Are you sure you want to continue ?", "Close Confirmation", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null);
-                if (showConfirmDialog == 0) {
+                boolean showConfirmDialog = Dialogs.get().confirm(null, "You are about to terminate the program.\n"
+                        + " Are you sure you want to continue ?", "Close Confirmation");
+                if (showConfirmDialog) {
                     System.exit(0);
                 }
             }
@@ -140,21 +139,20 @@ public class Parent_JFrame {
      */
     private static void openPdf(String fileName, String label) {
         if (!Desktop.isDesktopSupported()) {
-            JOptionPane.showMessageDialog(null, "This system cannot open the " + label + " automatically."
+            Dialogs.get().info(null, "This system cannot open the " + label + " automatically."
                     + "\nOpen " + fileName + " from the program folder instead.");
             return;
         }
         File myFile = new File(fileName);
         if (!myFile.exists()) {
-            JOptionPane.showMessageDialog(null, label + " not found !");
+            Dialogs.get().info(null, label + " not found !");
             return;
         }
         try {
             Desktop.getDesktop().open(myFile);
         } catch (IOException ex) {
             LOG.error("could not open the documentation", ex);
-            JOptionPane.showMessageDialog(null, "Could not open the " + label + " :\n" + ex.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
+            Dialogs.get().error(null, "Could not open the " + label + " :\n" + ex.getMessage());
         }
     }
 
@@ -164,9 +162,9 @@ public class Parent_JFrame {
         public void actionPerformed(ActionEvent e) {
             switch (e.getActionCommand()) {
                 case "Exit": {
-                    int showConfirmDialog = JOptionPane.showConfirmDialog(null, "You are about to terminate the program.\n"
-                            + " Are you sure you want to continue ?", "Close Confirmation", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null);
-                    if (showConfirmDialog == 0) {
+                    boolean showConfirmDialog = Dialogs.get().confirm(null, "You are about to terminate the program.\n"
+                            + " Are you sure you want to continue ?", "Close Confirmation");
+                    if (showConfirmDialog) {
                         System.exit(0);
                     }
                 }
@@ -199,7 +197,7 @@ public class Parent_JFrame {
                     } else {
                         result = "No Cars are Booked !";
                     }
-                    JOptionPane.showMessageDialog(null, result);
+                    Dialogs.get().info(null, result);
                 }
                 break;
                 case "View Unbooked Cars": {
@@ -212,7 +210,7 @@ public class Parent_JFrame {
                     } else {
                         result = "No UnBooked Cars are available !";
                     }
-                    JOptionPane.showMessageDialog(null, result);
+                    Dialogs.get().info(null, result);
                 }
                 break;
                 case "Add Customer": {
@@ -259,7 +257,7 @@ public class Parent_JFrame {
                 }
                 break;
                 case "About": {
-                    JOptionPane.showMessageDialog(null, "THIS PROGRAM IS WRITTEN AS A SEMESTER PROJECT OF OBJECT ORIENTED PROGRAMMING PROGRAMMIG  BY ABDULLAH SHAHID !");
+                    Dialogs.get().info(null, "THIS PROGRAM IS WRITTEN AS A SEMESTER PROJECT OF OBJECT ORIENTED PROGRAMMING PROGRAMMIG  BY ABDULLAH SHAHID !");
                 }
                 break;
 

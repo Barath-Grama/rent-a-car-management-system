@@ -335,13 +335,14 @@ Reported as latent rather than active.
 
 ## 7. What I would do next
 
-- **Date-range reservations.** Bookings are instantaneous — rent now, return now.
-  Reserving a car for a future window is the largest gap in the domain model.
-- **Per-field validation is still in the screens.** Each Add and Update dialog checks
-  CNIC, name and contact formats itself, because a red label beside the offending box
-  needs to know which box that is and a single result cannot say. Worth a validator
-  that reports per field.
-- **Soft-delete instead of cascade.** Deleting an owner erases their cars' rental
-  history. Correct for this application, wrong for a real one that needs to keep books.
-- **Some UI tests.** Not full coverage, but the screens are the one layer verified only
-  by hand, and defect 37 shows what that misses.
+- **Reservations do not expire.** A window nobody turns up for holds the car forever
+  and keeps blocking overlapping bookings. Releasing it after a grace period is the
+  obvious next rule.
+- **Retired records keep their CNIC and registration.** Those values cannot be reused,
+  which is the right default but should probably be a choice at the point of removal.
+- **One connection, one machine.** SQLite and a single shared connection are right for
+  a desk in one office and wrong for anything else.
+- **The screen tests cover wiring, not appearance.** They press real buttons and check
+  what was written and said. Nothing checks that a label is legible, that tab order is
+  sane, or that a dialog fits on the screen; defect 37 was found by rendering a screen
+  to a PNG and reading it, and nothing automated would catch its like.

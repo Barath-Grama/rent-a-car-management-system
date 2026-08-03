@@ -20,9 +20,14 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # The suite is headless by configuration, so no virtual display is needed.
+      # The screen tests open real windows and press real buttons, so the runner needs
+      # a display. Without one they skip themselves rather than fail, which would let
+      # a broken screen through unnoticed -- hence the virtual framebuffer.
+      - name: Install a virtual display
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
       - name: Build and test
-        run: mvn -B verify
+        run: xvfb-run -a --server-args="-screen 0 1600x1200x24" mvn -B verify
 
       - name: Upload coverage report
         if: always()

@@ -113,12 +113,11 @@ final class TableTools {
                     out.write(column == table.getColumnCount() - 1 ? "\n" : ",");
                 }
             }
-            JOptionPane.showMessageDialog(parent,
+            Dialogs.get().info(parent,
                     table.getRowCount() + " rows written to\n" + target.getAbsolutePath());
         } catch (IOException ex) {
             LOG.error("could not write the CSV export", ex);
-            JOptionPane.showMessageDialog(parent, "Could not write the file :\n" + ex.getMessage(),
-                    "Export failed", JOptionPane.ERROR_MESSAGE);
+            Dialogs.get().error(parent, "Could not write the file :\n" + ex.getMessage());
         }
     }
 

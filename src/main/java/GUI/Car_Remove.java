@@ -67,16 +67,14 @@ public final class Car_Remove extends JFrame {
 //                            if (carID != null) {
                             Car car = Car.SearchByID(Integer.parseInt(carID));
                             if (car != null) {
-                                int showConfirmDialog = JOptionPane.showConfirmDialog(null, "You are about to remove this car \n "
-                                        + car.toString() + "\n Are you sure you want to continue ??", "Confirmation",
-                                        JOptionPane.OK_CANCEL_OPTION);
-                                if (showConfirmDialog == 0) {
+                                boolean showConfirmDialog = Dialogs.get().confirm(null, "You are about to remove this car \n "
+                                        + car.toString() + "\n Are you sure you want to continue ??", "Confirmation");
+                                if (showConfirmDialog) {
 //                                    whether a car may go, and what happens to its
 //                                    bookings, is the service's call
                                     ServiceResult result = RentalService.removeCar(car.getID());
                                     if (!result.isSuccess()) {
-                                        JOptionPane.showMessageDialog(null, result.getMessage(),
-                                                "Error", JOptionPane.ERROR_MESSAGE);
+                                        Dialogs.get().error(null, result.getMessage());
                                         return;
                                     }
                                     Parent_JFrame.getMainFrame().getContentPane().removeAll();
@@ -85,12 +83,12 @@ public final class Car_Remove extends JFrame {
                                     Parent_JFrame.getMainFrame().getContentPane().revalidate();
                                     Parent_JFrame.getMainFrame().getContentPane().repaint();
 
-                                    JOptionPane.showMessageDialog(null, result.getMessage());
+                                    Dialogs.get().info(null, result.getMessage());
                                     Parent_JFrame.getMainFrame().setEnabled(true);
                                     dispose();
                                 }
                             } else {
-                                JOptionPane.showMessageDialog(null, "Car ID not found !");
+                                Dialogs.get().info(null, "Car ID not found !");
                             }
                         } else {
                             carID = null;

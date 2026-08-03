@@ -85,8 +85,13 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire.version}</version>
                 <configuration>
-                    <!-- No display in CI, and nothing under test touches a window peer. -->
-                    <argLine>@{argLine} -Djava.awt.headless=true</argLine>
+                    <!--
+                        Headless is deliberately NOT forced. The screen tests open real
+                        windows and press real buttons, which needs a display; they
+                        check for one themselves and skip when there is none, and CI
+                        supplies one with Xvfb. Everything else runs either way.
+                    -->
+                    <argLine>@{argLine}</argLine>
                     <!--
                         The model writes its .ser files to the current working directory.
                         Without this the suite would overwrite the repository's own data

@@ -104,8 +104,7 @@ public class Customer_Add {
                     ServiceResult result = RegistryService.addCustomer(
                             new Customer(0, 0, cnic, name, contact));
                     if (!result.isSuccess()) {
-                        JOptionPane.showMessageDialog(null, result.getMessage(),
-                                "Error", JOptionPane.ERROR_MESSAGE);
+                        Dialogs.get().error(null, result.getMessage());
                         break;
                     }
                     Parent_JFrame.getMainFrame().getContentPane().removeAll();
@@ -114,7 +113,7 @@ public class Customer_Add {
                     Parent_JFrame.getMainFrame().getContentPane().revalidate();
                     Parent_JFrame.getMainFrame().getContentPane().repaint();
                     Parent_JFrame.getMainFrame().setEnabled(true);
-                    JOptionPane.showMessageDialog(null, result.getMessage());
+                    Dialogs.get().info(null, result.getMessage());
                     frame.dispose();
                     break;
                 }

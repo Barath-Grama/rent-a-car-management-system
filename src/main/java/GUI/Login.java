@@ -11,7 +11,6 @@ import java.util.Arrays;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
@@ -103,9 +102,9 @@ public class Login {
         public void actionPerformed(ActionEvent e) {
             switch (e.getActionCommand()) {
                 case "Close": {
-                    int showConfirmDialog = JOptionPane.showConfirmDialog(null, "You are about to terminate the program.\n"
-                            + " Are you sure you want to continue ?", "Close Confirmation", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null);
-                    if (showConfirmDialog == 0) {
+                    boolean showConfirmDialog = Dialogs.get().confirm(null, "You are about to terminate the program.\n"
+                            + " Are you sure you want to continue ?", "Close Confirmation");
+                    if (showConfirmDialog) {
                         System.exit(0);
                     }
                     break;
@@ -126,7 +125,7 @@ public class Login {
                         mainFrame.add(menu.getMainPanel());
                         mainFrame.setVisible(true);
                     } else {
-                        JOptionPane.showMessageDialog(null, "Invalid UserName/Password", "Error", JOptionPane.ERROR_MESSAGE);
+                        Dialogs.get().error(null, "Invalid UserName/Password");
                     }
                     break;
                 }

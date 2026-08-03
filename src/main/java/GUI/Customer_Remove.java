@@ -65,18 +65,17 @@ public class Customer_Remove {
                     if (Customer.isIDvalid(id)) {
                         Customer customer = Customer.SearchByID(Integer.parseInt(id));
                         if (customer != null) {
-                            int showConfirmDialog = JOptionPane.showConfirmDialog(frame, "You are about to remove the following Customer.\n"
+                            boolean showConfirmDialog = Dialogs.get().confirm(frame, "You are about to remove the following Customer.\n"
                                     + customer.toString() + " \nAll the data including Booked Cars and Balance for this Customer will also be deleted  !"
-                                    + "\n Are you sure you want to continue ??", "Remove Customer", JOptionPane.OK_CANCEL_OPTION);
-                            if (showConfirmDialog == 0) {
+                                    + "\n Are you sure you want to continue ??", "Remove Customer");
+                            if (showConfirmDialog) {
 //                                The customer's bookings go with them: the foreign key
 //                                cascades, in one atomic step. This used to be a loop
 //                                over a stale snapshot calling a remove routine that
 //                                could destroy records it was never asked to touch.
                                 ServiceResult result = RentalService.removeCustomer(customer.getID());
                                 if (!result.isSuccess()) {
-                                    JOptionPane.showMessageDialog(null, result.getMessage(),
-                                            "Error", JOptionPane.ERROR_MESSAGE);
+                                    Dialogs.get().error(null, result.getMessage());
                                     frame.setEnabled(true);
                                     return;
                                 }
@@ -86,7 +85,7 @@ public class Customer_Remove {
                                 Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                                 Parent_JFrame.getMainFrame().getContentPane().revalidate();
                                 Parent_JFrame.getMainFrame().getContentPane().repaint();
-                                JOptionPane.showMessageDialog(null, result.getMessage());
+                                Dialogs.get().info(null, result.getMessage());
                                 Parent_JFrame.getMainFrame().setEnabled(true);
                                 frame.dispose();
                             } else {
@@ -95,10 +94,10 @@ public class Customer_Remove {
                             }
 
                         } else {
-                            JOptionPane.showMessageDialog(null, "This ID does not exists !");
+                            Dialogs.get().info(null, "This ID does not exists !");
                         }
                     } else {
-                        JOptionPane.showMessageDialog(null, "Enter a valid ID !\n(A valid ID is an integer number greater than 0)");
+                        Dialogs.get().info(null, "Enter a valid ID !\n(A valid ID is an integer number greater than 0)");
                     }
                     break;
                 }

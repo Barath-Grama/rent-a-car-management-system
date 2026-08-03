@@ -155,9 +155,7 @@ public final class Customer_Details implements ActionListener {
             break;
             case "Remove": {
                 if (!UserService.currentCanManageAccounts()) {
-                    JOptionPane.showMessageDialog(null,
-                            "Only an administrator can remove a customer.",
-                            "Not permitted", JOptionPane.WARNING_MESSAGE);
+                    Dialogs.get().notPermitted(null, "Only an administrator can remove a customer.");
                     break;
                 }
                 Parent_JFrame.getMainFrame().setEnabled(false);
@@ -190,9 +188,7 @@ public final class Customer_Details implements ActionListener {
             break;
             case "Clear Bill": {
                 if (!UserService.currentCanManageAccounts()) {
-                    JOptionPane.showMessageDialog(null,
-                            "Only an administrator can clear a customer's bill.",
-                            "Not permitted", JOptionPane.WARNING_MESSAGE);
+                    Dialogs.get().notPermitted(null, "Only an administrator can clear a customer's bill.");
                     break;
                 }
                 ArrayList<Customer> View = Customer.View();//Creating an arrayList that contains Objects of all Customers
@@ -204,23 +200,20 @@ public final class Customer_Details implements ActionListener {
                         }
                     }
                     if (IDsArray.isEmpty()) {
-                        JOptionPane.showMessageDialog(null, "No Customer has a bill to clear !");
+                        Dialogs.get().info(null, "No Customer has a bill to clear !");
                         break;
                     }
-                    Object showInputDialog = JOptionPane.showInputDialog(null, "Select ID for Customer whose bill you want to clear.", "Clear Bill",
-                            JOptionPane.PLAIN_MESSAGE, null, IDsArray.toArray(), null);
+                    Object showInputDialog = Dialogs.get().choose(null, "Select ID for Customer whose bill you want to clear.", "Clear Bill", IDsArray.toArray());
 
                     if (showInputDialog != null) {
                         Customer customer = Customer.SearchByID((Integer.parseInt(showInputDialog + "")));
 
-                        int showConfirmDialog = JOptionPane.showConfirmDialog(null, "You are about to clear the balance for the following Customer\n"
-                                + customer + "\nAre you sure you want to continue ?", "Clear Bill Confirmation",
-                                JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null);
-                        if (showConfirmDialog == 0) {
+                        boolean showConfirmDialog = Dialogs.get().confirm(null, "You are about to clear the balance for the following Customer\n"
+                                + customer + "\nAre you sure you want to continue ?", "Clear Bill Confirmation");
+                        if (showConfirmDialog) {
                             ServiceResult result = RegistryService.clearBill(customer.getID());
                             if (!result.isSuccess()) {
-                                JOptionPane.showMessageDialog(null, result.getMessage(),
-                                        "Not permitted", JOptionPane.WARNING_MESSAGE);
+                                Dialogs.get().notPermitted(null, result.getMessage());
                                 return;
                             }
                             Parent_JFrame.getMainFrame().getContentPane().removeAll();
@@ -228,11 +221,11 @@ public final class Customer_Details implements ActionListener {
                             Parent_JFrame.getMainFrame().add(cd.getMainPanel());
                             Parent_JFrame.getMainFrame().getContentPane().revalidate();
                             Parent_JFrame.getMainFrame().getContentPane().repaint();
-                            JOptionPane.showMessageDialog(null, result.getMessage());
+                            Dialogs.get().info(null, result.getMessage());
                         }
                     }
                 } else {
-                    JOptionPane.showMessageDialog(null, "No Customer Currently Registered !");
+                    Dialogs.get().info(null, "No Customer Currently Registered !");
                 }
             }
             break;
